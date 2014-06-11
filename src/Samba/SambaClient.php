@@ -52,6 +52,10 @@ class SambaClient
         '^Connection to (.+) failed \(Error (.+)\)$' => 'error',
     );
 
+    /**
+     * @param string $url
+     * @return array purl
+     */
     public function parseUrl($url)
     {
         $parsedUrl = parse_url(trim($url));
@@ -76,17 +80,26 @@ class SambaClient
             $parsedUrl['port'] = self::DEFAULT_PORT;
         }
 
+        $parsedUrl['url'] = $url;
+
         return $parsedUrl;
     }
 
-
-    public function look($purl)
+    /**
+     * @param array $purl
+     * @return array
+     */
+    public function look(array $purl)
     {
         return $this->client('-L ' . escapeshellarg($purl['host']), $purl);
     }
 
-
-    public function execute($command, $purl)
+    /**
+     * @param string $command
+     * @param array $purl
+     * @return array
+     */
+    public function execute($command, array $purl)
     {
         return $this->client(
             '-d 0 '
@@ -132,14 +145,22 @@ class SambaClient
         return $auth;
     }
 
-    public function client($params, $purl)
+    /**
+     * @param string $params
+     * @param array $purl
+     * @return array
+     */
+    public function client($params, array $purl)
     {
         $auth = $this->getAuth($purl);
 
         $port = $purl['port'] != self::DEFAULT_PORT ? ' -p ' . escapeshellarg($purl['port']) : '';
         $options = '-O ' . escapeshellarg(self::SMB4PHP_SMBOPTIONS);
+
         $output = $this->getProcessResource($params, $auth, $options, $port);
+
         $info = array();
+
         while (($line = fgets($output)) !== false) {
             $i = array();
 
@@ -224,12 +245,13 @@ class SambaClient
      */
     public function url_stat($url)
     {
-        if ($statFromCache = $this->getstatcache($url)) {
+        $parsedUrl = $this->parseUrl($url);
+
+        if ($statFromCache = $this->getStatCache($parsedUrl)) {
             return $statFromCache;
         }
 
         $stat = array();
-        $parsedUrl = $this->parseUrl($url);
 
         switch ($parsedUrl['type']) {
             case 'host':
@@ -258,11 +280,11 @@ class SambaClient
                 }
                 break;
             case 'path':
-                if ($output = $this->execute('dir "' . $parsedUrl['path'] . '"', $parsedUrl)) {
+                if ($output = $this->dir($parsedUrl)) {
                     $path = explode("\\", $parsedUrl['path']);
                     $name = $path[count($path) - 1];
-                    if (isset ($output['info'][$name])) {
-                        $stat = $this->addstatcache($url, $output['info'][$name]);
+                    if (isset($output['info'][$name])) {
+                        $stat = $this->addStatCache($parsedUrl['url'], $output['info'][$name]);
                     } else {
                         throw new SambaWrapperException("url_stat(): path '{$parsedUrl['path']}' not found");
                     }
@@ -277,7 +299,12 @@ class SambaClient
         return $stat;
     }
 
-    public function addstatcache($url, $info)
+    /**
+     * @param $url
+     * @param $info
+     * @return array
+     */
+    public function addStatCache($url, array $info)
     {
         $isFile = (strpos($info['attr'], 'D') === false);
         $stat = ($isFile) ? stat('/etc/passwd') : stat('/tmp');
@@ -287,17 +314,24 @@ class SambaClient
         return $this->cache[$url] = $stat;
     }
 
-    public function getstatcache($url)
+    /**
+     * @param array $purl
+     * @return bool
+     */
+    public function getStatCache(array $purl)
     {
-        return isset($this->cache[$url]) ? $this->cache[$url] : false;
+        return isset($this->cache[$purl['url']]) ? $this->cache[$purl['url']] : false;
     }
 
-    public function clearstatcache($url = '')
+    /**
+     * @param array $purl
+     */
+    public function clearStatCache(array $purl = null)
     {
-        if ($url == '') {
+        if (null === $purl) {
             $this->cache = array();
         } else {
-            unset($this->cache[$url]);
+            unset($this->cache[$purl['url']]);
         }
     }
 
@@ -305,20 +339,18 @@ class SambaClient
     # commands
 
     /**
-     * @param $params
-     * @param $auth
-     * @param $options
-     * @param $port
+     * @param string $params
+     * @param string $auth
+     * @param string $options
+     * @param string $port
      * @return resource
      */
     public function getProcessResource($params, $auth, $options, $port)
     {
-        $output = popen(
+        return popen(
             self::SMB4PHP_SMBCLIENT . " -N {$auth} {$options} {$port} {$options} {$params} 2>/dev/null",
             'r'
         );
-
-        return $output;
     }
 
     /**
@@ -330,14 +362,93 @@ class SambaClient
     }
 
     /**
+     * Commands
+     */
+
+    /**
+     * @param array $purl
+     * @param string $file
+     * @return array
+     */
+    public function get(array $purl, $file)
+    {
+        $command = sprintf('get "%s" "%s"', $purl['path'], $file);
+        return $this->execute($command, $purl);
+    }
+
+    /**
      * @param $file
      * @param $path
      * @param $purl
      * @return array
      */
-    public function put($file, $path, $purl)
+    public function put(array $purl, $file)
     {
-        $command = sprintf('put "%s %s %s"', $file, $path);
+        $this->clearStatCache($purl['path']);
+        $command = sprintf('put "%s" "%s"', $file, $purl['path']);
+        return $this->execute($command, $purl);
+    }
+
+    /**
+     * @param array $purl
+     * @return array
+     */
+    public function dir($purl)
+    {
+        $command = sprintf('dir "%s\*"', $purl['path']);
+        $result = $this->execute($command, $purl);
+
+        if (isset($result['info'])) {
+            foreach ($result['info'] as $name => $info) {
+                $this->addStatCache($purl['url'] . '/' . urlencode($name), $info);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param array $purl
+     * @return array
+     */
+    public function del(array $purl)
+    {
+        $this->clearStatCache($purl);
+        $command = sprintf('del "%s"', $purl['path']);
+        return $this->execute($command, $purl);
+    }
+
+    /**
+     * @param array $from purl
+     * @param array $to purl
+     * @return array
+     */
+    public function rename(array $from, array $to)
+    {
+        $this->clearStatCache($from);
+        $command = sprintf('rename "%s" "%s"', $from['path'], $to['path']);
+        return $this->execute($command, $to);
+    }
+
+    /**
+     * @param array $purl
+     * @return array
+     */
+    public function mkdir(array $purl)
+    {
+        $this->clearStatCache($purl);
+        $command = sprintf('mkdir "%s"', $purl['path']);
+        return $this->execute($command, $purl);
+    }
+
+    /**
+     * @param array $purl
+     * @return array
+     */
+    public function rmdir(array $purl)
+    {
+        $this->clearStatCache($purl);
+        $command = sprintf('rmdir "%s"', $purl['path']);
         return $this->execute($command, $purl);
     }
 }

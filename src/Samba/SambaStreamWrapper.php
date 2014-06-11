@@ -95,25 +95,22 @@ class SambaStreamWrapper
 
             return true;
         }
-        $pu = $this->getClient()->parseUrl($path);
-        switch ($pu['type']) {
+        $purl = $this->getClient()->parseUrl($path);
+        switch ($purl['type']) {
             case 'host':
-                if ($o = $this->getClient()->look($pu)) {
+                if ($o = $this->getClient()->look($purl)) {
                     $this->dir = $o['disk'];
                     $this->dir_index = 0;
                 } else {
-                    throw new SambaWrapperException("dir_opendir(): list failed for host '{$pu['host']}'");
+                    throw new SambaWrapperException("dir_opendir(): list failed for host '{$purl['host']}'");
                 }
                 break;
             case 'share':
             case 'path':
-                if ($o = $this->getClient()->execute('dir "' . $pu['path'] . '\*"', $pu)) {
+                if ($o = $this->getClient()->dir($purl)) {
                     $this->dir = array_keys($o['info']);
                     $this->dir_index = 0;
                     $this->add_dir_cache($path, $this->dir);
-                    foreach ($o['info'] as $name => $info) {
-                        $this->getClient()->addstatcache($path . '/' . urlencode($name), $info);
-                    }
                 } else {
                     $this->dir = array();
                     $this->dir_index = 0;
@@ -188,8 +185,8 @@ class SambaStreamWrapper
     {
         $this->url = $url;
         $this->mode = $mode;
-        $this->parsed_url = $pu = $this->getClient()->parseUrl($url);
-        if ($pu['type'] != 'path') {
+        $this->parsed_url = $purl = $this->getClient()->parseUrl($url);
+        if ($purl['type'] != 'path') {
             throw new SambaWrapperException('stream_open(): error in URL');
         }
         switch ($mode) {
@@ -199,7 +196,7 @@ class SambaStreamWrapper
             case 'a':
             case 'a+':
                 $this->tmpfile = tempnam('/tmp', 'smb.down.');
-                $this->getClient()->execute('get "' . $pu['path'] . '" "' . $this->tmpfile . '"', $pu);
+                $this->getClient()->get($purl, $this->tmpfile);
                 break;
             case 'w':
             case 'w+':
@@ -271,8 +268,7 @@ class SambaStreamWrapper
     public function stream_flush()
     {
         if ($this->mode != 'r' && $this->need_flush) {
-            $this->getClient()->clearstatcache($this->url);
-            $this->getClient()->put($this->tmpfile, $this->parsed_url['path'], $this->parsed_url);
+            $this->getClient()->put($this->parsed_url, $this->tmpfile);
             $this->need_flush = false;
         }
         return true;
@@ -292,13 +288,11 @@ class SambaStreamWrapper
      */
     public function unlink($url)
     {
-        $pu = $this->getClient()->parseUrl($url);
-        if ($pu['type'] != 'path') {
+        $purl = $this->getClient()->parseUrl($url);
+        if ($purl['type'] != 'path') {
             throw new SambaWrapperException('unlink(): error in URL');
         }
-        $this->getClient()->clearstatcache($url);
-
-        return $this->getClient()->execute('del "' . $pu['path'] . '"', $pu);
+        return $this->getClient()->del($purl);
     }
 
     /**
@@ -322,9 +316,8 @@ class SambaStreamWrapper
         if ($from['type'] != 'path' || $to['type'] != 'path') {
             throw new SambaWrapperException('rename(): error in URL');
         }
-        $this->getClient()->clearstatcache($url_from);
 
-        return $this->getClient()->execute('rename "' . $from['path'] . '" "' . $to['path'] . '"', $to);
+        return $this->getClient()->rename($from, $to);
     }
 
     /**
@@ -335,12 +328,12 @@ class SambaStreamWrapper
      */
     public function mkdir($url, $mode, $options)
     {
-        $pu = $this->getClient()->parseUrl($url);
-        if ($pu['type'] != 'path') {
+        $purl = $this->getClient()->parseUrl($url);
+        if ($purl['type'] != 'path') {
             throw new SambaWrapperException('mkdir(): error in URL');
         }
 
-        return $this->getClient()->execute('mkdir "' . $pu['path'] . '"', $pu);
+        return $this->getClient()->mkdir($purl);
     }
 
     /**
@@ -349,13 +342,12 @@ class SambaStreamWrapper
      */
     public function rmdir($url)
     {
-        $pu = $this->getClient()->parseUrl($url);
-        if ($pu['type'] != 'path') {
+        $purl = $this->getClient()->parseUrl($url);
+        if ($purl['type'] != 'path') {
             throw new SambaWrapperException('rmdir(): error in URL');
         }
-        $this->getClient()->clearstatcache($url);
 
-        return $this->getClient()->execute('rmdir "' . $pu['path'] . '"', $pu);
+        return $this->getClient()->rmdir($purl);
     }
 
     /**
