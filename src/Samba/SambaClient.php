@@ -216,12 +216,13 @@ class SambaClient
         return $info;
     }
 
-
-
-
     # stats
 
-    public function url_stat($url, $flags = STREAM_URL_STAT_LINK)
+    /**
+     * @param string $url
+     * @return array
+     */
+    public function url_stat($url)
     {
         if ($statFromCache = $this->getstatcache($url)) {
             return $statFromCache;
