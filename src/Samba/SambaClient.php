@@ -94,6 +94,23 @@ class SambaClient
         );
     }
 
+    /**
+     * @param $line
+     * @return array
+     */
+    protected function getTag($line)
+    {
+        $tag = 'skip';
+        $regs = array();
+        foreach ($this->regexp as $regexp => $t) {
+            if (preg_match('/' . $regexp . '/', $line, $regs)) {
+                $tag = $t;
+                break;
+            }
+        }
+        return array($tag, $regs);
+    }
+
     public function client($params, $purl)
     {
         if (self::SMB4PHP_AUTHMODE == 'env') {
@@ -110,16 +127,10 @@ class SambaClient
         $output = $this->getProcessResource($params, $auth, $options, $port);
         $info = array();
         while (($line = $this->fgets($output)) !== false) {
-            $tag = 'skip';
-            $regs = array();
             $i = array();
 
-            foreach ($this->regexp as $regexp => $t) {
-                if (preg_match('/' . $regexp . '/', $line, $regs)) {
-                    $tag = $t;
-                    break;
-                }
-            }
+            list($tag, $regs) = $this->getTag($line);
+
             switch ($tag) {
                 case 'skip':
                     continue;
