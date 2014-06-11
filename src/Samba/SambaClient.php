@@ -189,7 +189,7 @@ class SambaClient
                         : array();
                     break;
                 case 'error':
-                    throw new SambaWrapperException($regs[0]);
+                    throw new SambaException($regs[0]);
             }
             if ($i) {
                 switch ($i[1]) {
@@ -230,7 +230,7 @@ class SambaClient
                 if ($lookInfo = $this->look($url)) {
                     $stat = $this->getDirStat();
                 } else {
-                    throw new SambaWrapperException("url_stat(): list failed for host '{$url->getHost()}'");
+                    throw new SambaException("url_stat(): list failed for host '{$url->getHost()}'");
                 }
                 break;
             case SambaUrl::TYPE_SHARE:
@@ -245,7 +245,7 @@ class SambaClient
                         }
                     }
                     if (!$found) {
-                        throw new SambaWrapperException(
+                        throw new SambaException(
                             "url_stat(): disk resource '{$lowerShare}' not found in '{$url->getHost()}'"
                         );
                     }
@@ -257,14 +257,14 @@ class SambaClient
                     if (isset($output['info'][$name])) {
                         $stat = $this->setStatCache($url, $output['info'][$name]);
                     } else {
-                        throw new SambaWrapperException("url_stat(): path '{$url->getPath()}' not found");
+                        throw new SambaException("url_stat(): path '{$url->getPath()}' not found");
                     }
                 } else {
-                    throw new SambaWrapperException("url_stat(): dir failed for path '{$url->getPath()}'");
+                    throw new SambaException("url_stat(): dir failed for path '{$url->getPath()}'");
                 }
                 break;
             default:
-                throw new SambaWrapperException('error in URL');
+                throw new SambaException('error in URL');
         }
 
         return $stat;
@@ -394,7 +394,7 @@ class SambaClient
     public function rename(SambaUrl $from, SambaUrl $to)
     {
         if (!$from->isFromSameUserShare($to)) {
-            throw new SambaWrapperException('rename: FROM & TO must be in same server-share-user-pass-domain');
+            throw new SambaException('rename: FROM & TO must be in same server-share-user-pass-domain');
         }
 
         $this->checkUrlIsPath($from, 'rename');
@@ -433,12 +433,12 @@ class SambaClient
     /**
      * @param SambaUrl $url
      * @param string $command
-     * @throws SambaWrapperException
+     * @throws SambaException
      */
     protected function checkUrlIsPath(SambaUrl $url, $command)
     {
         if (!$url->isPath()) {
-            throw new SambaWrapperException($command . ': error - URL should be path');
+            throw new SambaException($command . ': error - URL should be path');
         }
     }
 

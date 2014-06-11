@@ -243,7 +243,7 @@ EOF;
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testRequestError()
     {
@@ -265,7 +265,7 @@ EOF;
 
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testBadNetworkNameError()
     {

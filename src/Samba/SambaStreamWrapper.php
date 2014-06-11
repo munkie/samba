@@ -97,7 +97,7 @@ class SambaStreamWrapper
                     $this->dir = $o['disk'];
                     $this->dir_index = 0;
                 } else {
-                    throw new SambaWrapperException("dir_opendir(): list failed for host '{$purl->getHost()}'");
+                    throw new SambaException("dir_opendir(): list failed for host '{$purl->getHost()}'");
                 }
                 break;
             case SambaUrl::TYPE_SHARE:
@@ -112,7 +112,7 @@ class SambaStreamWrapper
                 }
                 break;
             default:
-                throw new SambaWrapperException('dir_opendir(): error in URL');
+                throw new SambaException('dir_opendir(): error in URL');
         }
 
         return true;
@@ -181,7 +181,7 @@ class SambaStreamWrapper
         $this->mode = $mode;
         $this->url = $purl = $this->getClient()->parseUrl($url);
         if (!$purl->isPath()) {
-            throw new SambaWrapperException('stream_open(): error in URL');
+            throw new SambaException('stream_open(): error in URL');
         }
         switch ($mode) {
             case 'r':

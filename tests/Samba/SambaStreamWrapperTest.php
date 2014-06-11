@@ -32,7 +32,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testUnLinkExceptionNotAPath()
     {
@@ -66,7 +66,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testRenameExceptionOnNotOneServer()
     {
@@ -80,7 +80,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testRenameExceptionNotAPath()
     {
@@ -112,7 +112,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testMkDirExceptionNotAPath()
     {
@@ -143,7 +143,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testRmDirExceptionNotAPath()
     {
@@ -260,7 +260,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testUrlStatHostException()
     {
@@ -273,7 +273,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testUrlStatShareException()
     {
@@ -297,7 +297,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testUrlStatPathException()
     {
@@ -310,7 +310,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testUrlStatNotTypeUrlException()
     {
@@ -323,7 +323,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testUrlStatNotFoundPath()
     {
@@ -400,7 +400,7 @@ EOF;
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testDirOpenDirExceptionHostNotLook()
     {
@@ -413,7 +413,7 @@ EOF;
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testDirOpenDirExceptionErrorType()
     {
@@ -426,7 +426,7 @@ EOF;
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testStreamOpenExceptionHost()
     {
@@ -441,7 +441,7 @@ EOF;
     }
 
     /**
-     * @expectedException \Samba\SambaWrapperException
+     * @expectedException \Samba\SambaException
      */
     public function testStreamOpenExceptionShare()
     {
