@@ -272,7 +272,7 @@ class SambaStreamWrapper
     {
         if ($this->mode != 'r' && $this->need_flush) {
             $this->getClient()->clearstatcache($this->url);
-            $this->getClient()->execute('put "' . $this->tmpfile . '" "' . $this->parsed_url['path'] . '"', $this->parsed_url);
+            $this->getClient()->put($this->tmpfile, $this->parsed_url['path'], $this->parsed_url);
             $this->need_flush = false;
         }
         return true;
@@ -283,7 +283,7 @@ class SambaStreamWrapper
      */
     public function stream_stat()
     {
-        return $this->getClient()->url_stat($this->url);
+        return $this->url_stat($this->url);
     }
 
     /**

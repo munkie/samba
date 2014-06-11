@@ -9,6 +9,8 @@ class SambaClient
     const SMB4PHP_SMBCLIENT = "smbclient";
     const SMB4PHP_VERSION = "0.8";
 
+    const DEFAULT_PORT = 139;
+
     /**
      * @var array
      */
@@ -71,7 +73,7 @@ class SambaClient
             : ($parsedUrl['share'] ? 'share' : ($parsedUrl['host'] ? 'host' : '**error**'));
 
         if (!($parsedUrl['port'] = intval($parsedUrl['port']))) {
-            $parsedUrl['port'] = 139;
+            $parsedUrl['port'] = self::DEFAULT_PORT;
         }
 
         return $parsedUrl;
@@ -111,22 +113,34 @@ class SambaClient
         return array($tag, $regs);
     }
 
-    public function client($params, $purl)
+    /**
+     * @param array $purl
+     * @return string
+     */
+    protected function getAuth($purl)
     {
+        $auth = '';
+
         if (self::SMB4PHP_AUTHMODE == 'env') {
             putenv("USER={$purl['user']}%{$purl['pass']}");
-            $auth = '';
-        } else {
-            $auth = ($purl['user'] != '' ? (' -U ' . escapeshellarg($purl['user'] . '%' . $purl['pass'])) : '');
+        } elseif ($purl['user'] != '') {
+            $auth .= ' -U ' . escapeshellarg($purl['user'] . '%' . $purl['pass']);
         }
         if ($purl['domain'] != '') {
             $auth .= ' -W ' . escapeshellarg($purl['domain']);
         }
-        $port = ($purl['port'] != 139 ? ' -p ' . escapeshellarg($purl['port']) : '');
+        return $auth;
+    }
+
+    public function client($params, $purl)
+    {
+        $auth = $this->getAuth($purl);
+
+        $port = $purl['port'] != self::DEFAULT_PORT ? ' -p ' . escapeshellarg($purl['port']) : '';
         $options = '-O ' . escapeshellarg(self::SMB4PHP_SMBOPTIONS);
         $output = $this->getProcessResource($params, $auth, $options, $port);
         $info = array();
-        while (($line = $this->fgets($output)) !== false) {
+        while (($line = fgets($output)) !== false) {
             $i = array();
 
             list($tag, $regs) = $this->getTag($line);
@@ -201,6 +215,8 @@ class SambaClient
 
         return $info;
     }
+
+
 
 
     # stats
@@ -306,18 +322,21 @@ class SambaClient
 
     /**
      * @param $output
-     * @return string
-     */
-    public function fgets($output)
-    {
-        return $line = fgets($output, 4096);
-    }
-
-    /**
-     * @param $output
      */
     public function closeProcessResource($output)
     {
         pclose($output);
+    }
+
+    /**
+     * @param $file
+     * @param $path
+     * @param $purl
+     * @return array
+     */
+    public function put($file, $path, $purl)
+    {
+        $command = sprintf('put "%s %s %s"', $file, $path);
+        return $this->execute($command, $purl);
     }
 }
