@@ -357,4 +357,12 @@ class SambaStreamWrapper
     {
         return stream_wrapper_unregister(static::PROTOCOL);
     }
+
+    /**
+     * @return bool
+     */
+    public static function is_registered()
+    {
+        return in_array(static::PROTOCOL, stream_get_wrappers());
+    }
 }
