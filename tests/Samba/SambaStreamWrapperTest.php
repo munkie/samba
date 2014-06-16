@@ -2,17 +2,8 @@
 
 namespace Samba;
 
-class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
+class SambaStreamWrapperTest extends TestCase
 {
-    /**
-     * @param array $methods
-     * @return \PHPUnit_Framework_MockObject_MockObject|SambaClient
-     */
-    protected function getSambaClientMock(array $methods)
-    {
-        return $this->getMock('\\Samba\\SambaClient', $methods);
-    }
-
     public function testUnlinkMethod()
     {
         $url = "smb://user:password@host/base_path/to/dir/file.doc";
@@ -189,7 +180,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
         $sambaMock
             ->expects($this->any())
             ->method('execute')
-            ->will($this->returnValue(SambaClientTest::getExpectedDirInfo()));
+            ->will($this->returnValue($this->getExpectedDirInfo()));
 
         $expectedStatInfoDir = stat("/tmp");
         $expectedStatInfoDir[7] = $expectedStatInfoDir['size'] = 0;
@@ -216,7 +207,7 @@ class SambaStreamWrapperTest extends \PHPUnit_Framework_TestCase
         $sambaMock
             ->expects($this->any())
             ->method('execute')
-            ->will($this->returnValue(SambaClientTest::getExpectedDirInfo()));
+            ->will($this->returnValue($this->getExpectedDirInfo()));
 
         $expectedStatInfoFile = stat('/etc/passwd');
         $expectedStatInfoFile[7] = $expectedStatInfoFile['size'] = 70;
@@ -333,7 +324,7 @@ Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
 NT_STATUS_NO_SUCH_FILE listing \reportsw
 EOF;
 
-        $executeOutputStream = SambaClientTest::convertStringToResource($executeOutput);
+        $executeOutputStream = $this->convertStringToResource($executeOutput);
 
         $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
@@ -380,7 +371,7 @@ EOF;
         $sambaMock
             ->expects($this->any())
             ->method('execute')
-            ->will($this->returnValue(SambaClientTest::getExpectedDirInfo()));
+            ->will($this->returnValue($this->getExpectedDirInfo()));
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->dir_opendir($urlDir, 0);
