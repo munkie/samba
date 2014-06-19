@@ -9,6 +9,10 @@ php:
 before_script:
     - echo 'date.timezone = "Europe/Moscow"' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
     - composer --dev install
+    - mkdir -p build/logs
 
 script:
-    - bin/phpunit
+    - bin/phpunit --coverage-clover build/logs/clover.xml
+
+after_script:
+    - bin/coveralls -v
