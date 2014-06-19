@@ -308,7 +308,8 @@ class SambaStreamWrapper
     public function mkdir($path, $mode, $options)
     {
         $url = $this->getClient()->parseUrl($path);
-        return $this->getClient()->mkdir($url);
+        $info = $this->getClient()->mkdir($url);
+        return true;
     }
 
     /**
