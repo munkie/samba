@@ -4,9 +4,61 @@
         "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "c347e4629dc1bac3c6a8a1eae2327714",
+    "hash": "8e3e1f2603e4fed4a7b53f5a4fcf2f19",
     "packages": [],
     "packages-dev": [
+        {
+            "name": "codeclimate/php-test-reporter",
+            "version": "dev-master",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/codeclimate/php-test-reporter.git",
+                "reference": "ad27fad5c6d99555e5bf2f2515e20eb54251252a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/codeclimate/php-test-reporter/zipball/ad27fad5c6d99555e5bf2f2515e20eb54251252a",
+                "reference": "ad27fad5c6d99555e5bf2f2515e20eb54251252a",
+                "shasum": ""
+            },
+            "require": {
+                "guzzle/guzzle": ">=3.0",
+                "php": ">=5.3",
+                "satooshi/php-coveralls": "dev-master",
+                "symfony/console": ">=2.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "3.7.*@stable"
+            },
+            "bin": [
+                "composer/bin/test-reporter"
+            ],
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "CodeClimate\\Component": "src/",
+                    "CodeClimate\\Bundle": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Code Climate",
+                    "email": "hello@codeclimate.com",
+                    "homepage": "https://codeclimate.com"
+                }
+            ],
+            "description": "PHP client for reporting test coverage to Code Climate",
+            "homepage": "https://github.com/codeclimate/php-test-reporter",
+            "keywords": [
+                "codeclimate",
+                "coverage"
+            ],
+            "time": "2014-05-28 04:41:31"
+        },
         {
             "name": "guzzle/guzzle",
             "version": "v3.9.1",
@@ -518,20 +570,19 @@
         },
         {
             "name": "satooshi/php-coveralls",
-            "version": "v0.6.1",
+            "version": "dev-master",
             "source": {
                 "type": "git",
                 "url": "https://github.com/satooshi/php-coveralls.git",
-                "reference": "dd0df95bd37a7cf5c5c50304dfe260ffe4b50760"
+                "reference": "d05254e48ac5031a16418f42b11ccb0fc6daacd2"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/satooshi/php-coveralls/zipball/dd0df95bd37a7cf5c5c50304dfe260ffe4b50760",
-                "reference": "dd0df95bd37a7cf5c5c50304dfe260ffe4b50760",
+                "url": "https://api.github.com/repos/satooshi/php-coveralls/zipball/d05254e48ac5031a16418f42b11ccb0fc6daacd2",
+                "reference": "d05254e48ac5031a16418f42b11ccb0fc6daacd2",
                 "shasum": ""
             },
             "require": {
-                "ext-curl": "*",
                 "ext-json": "*",
                 "ext-simplexml": "*",
                 "guzzle/guzzle": ">=3.0",
@@ -553,14 +604,22 @@
                 "squizlabs/php_codesniffer": "1.4.*@stable",
                 "theseer/fdomdocument": "dev-master"
             },
+            "suggest": {
+                "symfony/http-kernel": "Allows Symfony integration"
+            },
             "bin": [
                 "composer/bin/coveralls"
             ],
             "type": "library",
+            "extra": {
+                "branch-alias": {
+                    "dev-master": "0.7-dev"
+                }
+            },
             "autoload": {
                 "psr-0": {
-                    "Contrib\\Component": "src/",
-                    "Contrib\\Bundle": "src/"
+                    "Satooshi\\Component": "src/",
+                    "Satooshi\\Bundle": "src/"
                 }
             },
             "notification-url": "https://packagist.org/downloads/",
@@ -582,7 +641,7 @@
                 "github",
                 "test"
             ],
-            "time": "2013-05-04 08:07:33"
+            "time": "2014-06-12 15:19:16"
         },
         {
             "name": "sebastian/comparator",
@@ -1168,7 +1227,10 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "satooshi/php-coveralls": 20,
+        "codeclimate/php-test-reporter": 20
+    },
     "platform": [],
     "platform-dev": []
 }
