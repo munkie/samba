@@ -1,0 +1,19 @@
+language: php
+
+php:
+  - 5.3.3
+  - 5.3
+  - 5.4
+  - 5.5
+
+before_script:
+    - echo 'date.timezone = "Europe/Moscow"' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+    - composer --dev install
+    - mkdir -p build/logs
+
+script:
+    - bin/phpunit --coverage-clover build/logs/clover.xml
+
+after_script:
+    - bin/coveralls -v
+    - CODECLIMATE_REPO_TOKEN=eed6d4d4a77cdb425447e7d120f99c96f8a290ef0d9a7a916f4757ffb8628ded bin/test-reporter

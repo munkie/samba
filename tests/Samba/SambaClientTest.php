@@ -141,7 +141,7 @@ class SambaClientTest extends TestCase
     {
         $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
-        $payload = $this->convertStringToResource(
+        $commandOutputStream = $this->convertStringToResource(
             "Anonymous login successful\n" .
             "Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]\n" .
             "\n" .
@@ -165,15 +165,15 @@ class SambaClientTest extends TestCase
         $sambaMock
             ->expects($this->once())
             ->method('getProcessResource')
-            ->will($this->returnValue($payload));
+            ->will($this->returnValue($commandOutputStream));
 
         $expectedLookInfo = array(
-            "disk" => array("centrum"),
-            "server" => array("vm6"),
-            "workgroup" => array("cmag", "mygroup"),
+            'disk' => array('centrum'),
+            'server' => array('vm6'),
+            'workgroup' => array('cmag', 'mygroup'),
         );
 
-        $urlFile = "smb://user:password@host/base_path/to/dir/file.doc";
+        $urlFile = 'smb://user:password@host/base_path/to/dir/file.doc';
 
         $parsedUrlFile = $sambaMock->parseUrl($urlFile);
 
@@ -233,7 +233,7 @@ EOF;
             ->method('getProcessResource')
             ->will($this->returnValue($errorResponseStream));
 
-        $urlDir = "smb://user:password@host/base_path/to/dir";
+        $urlDir = 'smb://user:password@host/base_path/to/dir';
 
         $parsedUrlDir = $sambaMock->parseUrl($urlDir);
 
@@ -246,7 +246,7 @@ EOF;
      */
     public function testBadNetworkNameError()
     {
-        $urlDir = "smb://user:password@host/base_path/to/dir";
+        $urlDir = 'smb://user:password@host/base_path/to/dir';
 
         $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
@@ -263,60 +263,92 @@ EOF;
         $sambaMock->dir($parsedUrlDir);
     }
 
-    public function testStatCacheMethods()
+    public function testStatCacheClear()
     {
-        $urlFile = "smb://user:password@host/base_path/to/dir/file.doc";
-        $urlDir = "smb://user:password@host/base_path/to/dir";
+        $urlFile = 'smb://user:password@host/base_path/to/dir/file.doc';
+        $urlDir = 'smb://user:password@host/base_path/to/dir';
 
         $sambaMock = $this->getSambaClientMock(array('execute'));
 
         $parsedUrlFile = $sambaMock->parseUrl($urlFile);
         $parsedUrlDir = $sambaMock->parseUrl($urlDir);
 
-        $this->assertFalse($sambaMock->getStatCache($parsedUrlFile));
-        $this->assertFalse($sambaMock->getStatCache($parsedUrlDir));
-
         $infoFile = array(
             'attr' => 'F',
             'size' => 4,
             'time' => 777,
         );
-        $statFile = stat("/etc/passwd");
-        $statFile[7] = $statFile['size'] = $infoFile['size'];
-        $statFile[8]
-            = $statFile[9]
-            = $statFile[10]
-            = $statFile['atime']
-            = $statFile['mtime']
-            = $statFile['ctime']
-            = $infoFile['time'];
+        $expectedStatFile = $this->createStatInfo('/etc/passwd', 4, 777);
 
-        $infoDir = $infoFile;
-        $infoDir['attr'] = 'D';
-        $statDir = stat("/tmp");
-        $statDir[7] = $statDir['size'] = $infoDir['size'];
-        $statDir[8]
-            = $statDir[9]
-            = $statDir[10]
-            = $statDir['atime']
-            = $statDir['mtime']
-            = $statDir['ctime']
-            = $infoDir['time'];
+        $infoDir = array(
+            'attr' => 'D',
+            'size' => 4,
+            'time' => 777,
+        );
 
-        $this->assertEquals($statFile, $sambaMock->setStatCache($parsedUrlFile, $infoFile));
-        $this->assertEquals($statDir, $sambaMock->setStatCache($parsedUrlDir, $infoDir));
+        $expectedStatDir = $this->createStatInfo('/tmp', $infoDir['size'], $infoDir['time']);
 
-        $this->assertEquals($statFile, $sambaMock->getStatCache($parsedUrlFile));
-        $this->assertEquals($statDir, $sambaMock->getStatCache($parsedUrlDir));
+        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrlFile, $infoFile));
+        $this->assertEquals($expectedStatDir, $sambaMock->setStatCache($parsedUrlDir, $infoDir));
+
+        $this->assertEquals($expectedStatFile, $sambaMock->getStatCache($parsedUrlFile));
+        $this->assertEquals($expectedStatDir, $sambaMock->getStatCache($parsedUrlDir));
 
         $sambaMock->clearStatCache($parsedUrlFile);
 
         $this->assertFalse($sambaMock->getStatCache($parsedUrlFile));
-        $this->assertEquals($statDir, $sambaMock->getStatCache($parsedUrlDir));
+        $this->assertEquals($expectedStatDir, $sambaMock->getStatCache($parsedUrlDir));
 
-        $this->assertEquals($statFile, $sambaMock->setStatCache($parsedUrlFile, $infoFile));
+        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrlFile, $infoFile));
+
         $sambaMock->clearStatCache();
+
         $this->assertFalse($sambaMock->getStatCache($parsedUrlFile));
         $this->assertFalse($sambaMock->getStatCache($parsedUrlDir));
+    }
+
+    /**
+     * @dataProvider statCacheProvider
+     * @param string $url
+     * @param string $mode
+     * @param string $file
+     */
+    public function testStatCache($url, $mode, $file)
+    {
+        $sambaMock = $this->getSambaClientMock(array('execute'));
+
+        $parsedUrl = $sambaMock->parseUrl($url);
+
+        $this->assertFalse($sambaMock->getStatCache($parsedUrl));
+
+        $info = array(
+            'attr' => $mode,
+            'size' => 4,
+            'time' => 777,
+        );
+        $expectedStatFile = $this->createStatInfo($file, $info['size'], $info['time']);
+
+        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrl, $info));
+
+        $this->assertEquals($expectedStatFile, $sambaMock->getStatCache($parsedUrl));
+    }
+
+    /**
+     * @return array
+     */
+    public function statCacheProvider()
+    {
+        return array(
+            'dir' => array(
+                'smb://user:password@host/base_path/to/dir',
+                'D',
+                '/tmp'
+            ),
+            'file' => array(
+                'smb://user:password@host/base_path/to/dir/file.doc',
+                'F',
+                '/etc/passwd'
+            ),
+        );
     }
 }

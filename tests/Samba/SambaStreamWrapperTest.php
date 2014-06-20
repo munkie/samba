@@ -182,15 +182,7 @@ class SambaStreamWrapperTest extends TestCase
             ->method('execute')
             ->will($this->returnValue($this->getExpectedDirInfo()));
 
-        $expectedStatInfoDir = stat("/tmp");
-        $expectedStatInfoDir[7] = $expectedStatInfoDir['size'] = 0;
-        $expectedStatInfoDir[8]
-            = $expectedStatInfoDir[9]
-            = $expectedStatInfoDir[10]
-            = $expectedStatInfoDir['atime']
-            = $expectedStatInfoDir['mtime']
-            = $expectedStatInfoDir['ctime']
-            = 1380789766;
+        $expectedStatInfoDir = $this->createStatInfo('/tmp', 0, 1380789766);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoDir = $wrapper->url_stat($urlDir);
@@ -209,15 +201,7 @@ class SambaStreamWrapperTest extends TestCase
             ->method('execute')
             ->will($this->returnValue($this->getExpectedDirInfo()));
 
-        $expectedStatInfoFile = stat('/etc/passwd');
-        $expectedStatInfoFile[7] = $expectedStatInfoFile['size'] = 70;
-        $expectedStatInfoFile[8]
-            = $expectedStatInfoFile[9]
-            = $expectedStatInfoFile[10]
-            = $expectedStatInfoFile['atime']
-            = $expectedStatInfoFile['mtime']
-            = $expectedStatInfoFile['ctime']
-            = 1378998030;
+        $expectedStatInfoFile = $this->createStatInfo('/etc/passwd', 70, 1378998030);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoFile = $wrapper->url_stat($urlFile);
@@ -444,5 +428,42 @@ EOF;
 
         $path = null;
         $wrapper->stream_open($urlHost, '', '', $path);
+    }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testWrapperRegister()
+    {
+        $this->assertFalse(SambaStreamWrapper::is_registered());
+
+        SambaStreamWrapper::register();
+
+        $this->assertTrue(SambaStreamWrapper::is_registered());
+
+        SambaStreamWrapper::unregister();
+
+        $this->assertFalse(SambaStreamWrapper::is_registered());
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @expectedException \PHPUnit_Framework_Error_Warning
+     * @expectedExceptionMessage Unable to unregister protocol smb://
+     */
+    public function testWrapperUnregisterNotRegistered()
+    {
+        SambaStreamWrapper::unregister();
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @expectedException \PHPUnit_Framework_Error_Warning
+     * @expectedExceptionMessage Protocol smb:// is already defined
+     */
+    public function testWrapperDoubleRegister()
+    {
+        SambaStreamWrapper::register();
+        SambaStreamWrapper::register();
     }
 }

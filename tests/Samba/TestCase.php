@@ -105,4 +105,24 @@ class TestCase extends \PHPUnit_Framework_TestCase
             ),
         );
     }
+
+    /**
+     * @param string $file
+     * @param int $size
+     * @param int $time
+     * @return array
+     */
+    protected function createStatInfo($file, $size, $time)
+    {
+        $statInfo = stat($file);
+        $statInfo[7] = $statInfo['size'] = $size;
+        $statInfo[8]
+            = $statInfo[9]
+            = $statInfo[10]
+            = $statInfo['atime']
+            = $statInfo['mtime']
+            = $statInfo['ctime']
+            = $time;
+        return $statInfo;
+    }
 }
