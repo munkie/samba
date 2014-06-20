@@ -1,6 +1,6 @@
 #!/bin/sh
 sudo apt-get update -qq
-sudo apt-get install -y samba
+sudo apt-get install -y smbclient samba
 
 echo 'password' | tee - | sudo smbpasswd -a -s $USER
 
