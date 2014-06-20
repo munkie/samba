@@ -27,12 +27,12 @@ Add following to your _composer.json_ file:
 Usage
 -----
 
-Reqister smb stream wrapper shortcut method:
+Register samba stream wrapper:
 ```php
 \Samba\SambaStreamWrapper::register();
 ```
 
-You can check is wrapper is already registered usign this call:
+You can check if wrapper is already registered using this call:
 ```php
 \Samba\SambaStreamWrapper::is_registered();
 ```

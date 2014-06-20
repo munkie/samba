@@ -60,17 +60,6 @@ class SambaStreamWrapper
     }
 
     /**
-     * @return SambaClient
-     */
-    public function getClient()
-    {
-        if (null === $this->client) {
-            $this->client = new SambaClient();
-        }
-        return $this->client;
-    }
-
-    /**
      * @param string $path
      * @param int $options
      * @return bool
@@ -312,7 +301,8 @@ class SambaStreamWrapper
     public function rmdir($path)
     {
         $url = $this->client->parseUrl($path);
-        return $this->client->rmdir($url);
+        $this->client->rmdir($url);
+        return true;
     }
 
     /**
@@ -323,7 +313,14 @@ class SambaStreamWrapper
     public function url_stat($path, $flags = STREAM_URL_STAT_LINK)
     {
         $url = $this->client->parseUrl($path);
-        return $this->client->urlStat($url);
+        try {
+            return $this->client->urlStat($url);
+        } catch (SambaException $e) {
+            if ($flags ^ STREAM_URL_STAT_QUIET) {
+                trigger_error(sprintf('stat failed for %s', $path), E_USER_WARNING);
+            }
+            return false;
+        }
     }
 
     public function __destruct()
