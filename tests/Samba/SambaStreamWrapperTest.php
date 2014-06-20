@@ -429,4 +429,41 @@ EOF;
         $path = null;
         $wrapper->stream_open($urlHost, '', '', $path);
     }
+
+    /**
+     * @runInSeparateProcess
+     */
+    public function testWrapperRegister()
+    {
+        $this->assertFalse(SambaStreamWrapper::is_registered());
+
+        SambaStreamWrapper::register();
+
+        $this->assertTrue(SambaStreamWrapper::is_registered());
+
+        SambaStreamWrapper::unregister();
+
+        $this->assertFalse(SambaStreamWrapper::is_registered());
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @expectedException \PHPUnit_Framework_Error_Warning
+     * @expectedExceptionMessage Unable to unregister protocol smb://
+     */
+    public function testWrapperUnregisterNotRegistered()
+    {
+        SambaStreamWrapper::unregister();
+    }
+
+    /**
+     * @runInSeparateProcess
+     * @expectedException \PHPUnit_Framework_Error_Warning
+     * @expectedExceptionMessage Protocol smb:// is already defined
+     */
+    public function testWrapperDoubleRegister()
+    {
+        SambaStreamWrapper::register();
+        SambaStreamWrapper::register();
+    }
 }
