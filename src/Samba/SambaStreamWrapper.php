@@ -51,19 +51,12 @@ class SambaStreamWrapper
      */
     protected $dir_index = -1;
 
-    public function __construct(SambaClient $client = null)
-    {
-        if ($client) {
-            $this->setClient($client);
-        }
-    }
-
     /**
      * @param SambaClient $client
      */
-    public function setClient(SambaClient $client)
+    public function __construct(SambaClient $client = null)
     {
-        $this->client = $client;
+        $this->client = ($client) ?: new SambaClient();
     }
 
     /**
@@ -90,10 +83,10 @@ class SambaStreamWrapper
 
             return true;
         }
-        $purl = $this->getClient()->parseUrl($path);
+        $purl = $this->client->parseUrl($path);
         switch ($purl->getType()) {
             case SambaUrl::TYPE_HOST:
-                if ($o = $this->getClient()->look($purl)) {
+                if ($o = $this->client->look($purl)) {
                     $this->dir = $o['disk'];
                     $this->dir_index = 0;
                 } else {
@@ -102,7 +95,7 @@ class SambaStreamWrapper
                 break;
             case SambaUrl::TYPE_SHARE:
             case SambaUrl::TYPE_PATH:
-                if ($o = $this->getClient()->dir($purl)) {
+                if ($o = $this->client->dir($purl)) {
                     $this->dir = array_keys($o['info']);
                     $this->dir_index = 0;
                     $this->add_dir_cache($path, $this->dir);
@@ -179,7 +172,7 @@ class SambaStreamWrapper
     public function stream_open($url, $mode, $options, &$opened_path)
     {
         $this->mode = $mode;
-        $this->url = $purl = $this->getClient()->parseUrl($url);
+        $this->url = $purl = $this->client->parseUrl($url);
         if (!$purl->isPath()) {
             throw new SambaException('stream_open(): error in URL');
         }
@@ -190,7 +183,7 @@ class SambaStreamWrapper
             case 'a':
             case 'a+':
                 $this->tmpfile = tempnam('/tmp', 'smb.down.');
-                $this->getClient()->get($purl, $this->tmpfile);
+                $this->client->get($purl, $this->tmpfile);
                 break;
             case 'w':
             case 'w+':
@@ -262,7 +255,7 @@ class SambaStreamWrapper
     public function stream_flush()
     {
         if ($this->mode != 'r' && $this->need_flush) {
-            $this->getClient()->put($this->url, $this->tmpfile);
+            $this->client->put($this->url, $this->tmpfile);
             $this->need_flush = false;
         }
         return true;
@@ -282,8 +275,8 @@ class SambaStreamWrapper
      */
     public function unlink($path)
     {
-        $url = $this->getClient()->parseUrl($path);
-        return $this->getClient()->del($url);
+        $url = $this->client->parseUrl($path);
+        return $this->client->del($url);
     }
 
     /**
@@ -293,10 +286,10 @@ class SambaStreamWrapper
      */
     public function rename($path_from, $path_to)
     {
-        $url_from = $this->getClient()->parseUrl($path_from);
-        $url_to = $this->getClient()->parseUrl($path_to);
+        $url_from = $this->client->parseUrl($path_from);
+        $url_to = $this->client->parseUrl($path_to);
 
-        return $this->getClient()->rename($url_from, $url_to);
+        return $this->client->rename($url_from, $url_to);
     }
 
     /**
@@ -307,8 +300,8 @@ class SambaStreamWrapper
      */
     public function mkdir($path, $mode, $options)
     {
-        $url = $this->getClient()->parseUrl($path);
-        $info = $this->getClient()->mkdir($url);
+        $url = $this->client->parseUrl($path);
+        $this->client->mkdir($url);
         return true;
     }
 
@@ -318,8 +311,8 @@ class SambaStreamWrapper
      */
     public function rmdir($path)
     {
-        $url = $this->getClient()->parseUrl($path);
-        return $this->getClient()->rmdir($url);
+        $url = $this->client->parseUrl($path);
+        return $this->client->rmdir($url);
     }
 
     /**
@@ -329,8 +322,8 @@ class SambaStreamWrapper
      */
     public function url_stat($path, $flags = STREAM_URL_STAT_LINK)
     {
-        $url = $this->getClient()->parseUrl($path);
-        return $this->getClient()->urlStat($url);
+        $url = $this->client->parseUrl($path);
+        return $this->client->urlStat($url);
     }
 
     public function __destruct()
