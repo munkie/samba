@@ -6,10 +6,6 @@ php:
   - 5.4
   - 5.5
 
-env:
-  - TESTSUITE="unit"
-  - TESTSUITE="functional"
-
 before_script:
     - bash -x bin/install_samba.sh
     - echo 'date.timezone = "Europe/Moscow"' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
@@ -17,7 +13,7 @@ before_script:
     - mkdir -p build/logs
 
 script:
-    - bin/phpunit --coverage-clover build/logs/clover.xml --testsuite $TESTSUITE
+    - bin/phpunit --coverage-clover build/logs/clover.xml
 
 after_script:
     - bin/coveralls -v
