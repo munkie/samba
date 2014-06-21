@@ -183,6 +183,10 @@ class SambaClientTest extends TestCase
 
     public function testDirRequest()
     {
+        // workaround for expected dates which are parsed with moscow timezone
+        $previousTZ = date_default_timezone_get();
+        date_default_timezone_set('Europe/Moscow');
+
         $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
         $urlDir = "smb://user:password@host/base_path/to/dir";
@@ -212,15 +216,18 @@ EOF;
             ->method('getProcessResource')
             ->will($this->returnValue($openDirInfoStream));
 
-        $dirInfo = $sambaMock->dir($parsedUrlDir);
+        $dirInfo = $sambaMock->dir($parsedUrlDir, '\*');
 
         $expectedDirInfo = $this->getExpectedDirInfo();
 
         $this->assertEquals($expectedDirInfo, $dirInfo);
+
+        date_default_timezone_set($previousTZ);
     }
 
     /**
      * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage tree connect failed: test
      */
     public function testRequestError()
     {
@@ -243,6 +250,7 @@ EOF;
 
     /**
      * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage Connection to faro.lighthouse.pro failed (Error NT_STATUS_BAD_NETWORK_NAME)
      */
     public function testBadNetworkNameError()
     {
@@ -263,92 +271,67 @@ EOF;
         $sambaMock->dir($parsedUrlDir);
     }
 
-    public function testStatCacheClear()
+    public function testCommandWithDomainAndCustomPort()
     {
-        $urlFile = 'smb://user:password@host/base_path/to/dir/file.doc';
-        $urlDir = 'smb://user:password@host/base_path/to/dir';
+        $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
-        $sambaMock = $this->getSambaClientMock(array('execute'));
-
-        $parsedUrlFile = $sambaMock->parseUrl($urlFile);
-        $parsedUrlDir = $sambaMock->parseUrl($urlDir);
-
-        $infoFile = array(
-            'attr' => 'F',
-            'size' => 4,
-            'time' => 777,
-        );
-        $expectedStatFile = $this->createStatInfo('/etc/passwd', 4, 777);
-
-        $infoDir = array(
-            'attr' => 'D',
-            'size' => 4,
-            'time' => 777,
+        $expectedParams = '-d 0 \'//hostname/share\' -c \'mkdir "dir"\'';
+        $expectedOptions = array(
+            '-O' => SambaClient::SOCKET_OPTIONS,
+            '-U' => 'user%password',
+            '-W' => 'domain.local',
+            '-p' => 777,
         );
 
-        $expectedStatDir = $this->createStatInfo('/tmp', $infoDir['size'], $infoDir['time']);
+        $outputStream = $this->convertStringToResource('');
 
-        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrlFile, $infoFile));
-        $this->assertEquals($expectedStatDir, $sambaMock->setStatCache($parsedUrlDir, $infoDir));
+        $sambaMock
+            ->expects($this->once())
+            ->method('getProcessResource')
+            ->with(
+                $this->equalTo($expectedParams),
+                $this->equalTo($expectedOptions)
+            )
+            ->will($this->returnValue($outputStream))
+        ;
 
-        $this->assertEquals($expectedStatFile, $sambaMock->getStatCache($parsedUrlFile));
-        $this->assertEquals($expectedStatDir, $sambaMock->getStatCache($parsedUrlDir));
-
-        $sambaMock->clearStatCache($parsedUrlFile);
-
-        $this->assertFalse($sambaMock->getStatCache($parsedUrlFile));
-        $this->assertEquals($expectedStatDir, $sambaMock->getStatCache($parsedUrlDir));
-
-        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrlFile, $infoFile));
-
-        $sambaMock->clearStatCache();
-
-        $this->assertFalse($sambaMock->getStatCache($parsedUrlFile));
-        $this->assertFalse($sambaMock->getStatCache($parsedUrlDir));
-    }
-
-    /**
-     * @dataProvider statCacheProvider
-     * @param string $url
-     * @param string $mode
-     * @param string $file
-     */
-    public function testStatCache($url, $mode, $file)
-    {
-        $sambaMock = $this->getSambaClientMock(array('execute'));
+        $url = 'smb://domain.local;user:password@hostname:777/share/dir';
 
         $parsedUrl = $sambaMock->parseUrl($url);
-
-        $this->assertFalse($sambaMock->getStatCache($parsedUrl));
-
-        $info = array(
-            'attr' => $mode,
-            'size' => 4,
-            'time' => 777,
-        );
-        $expectedStatFile = $this->createStatInfo($file, $info['size'], $info['time']);
-
-        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrl, $info));
-
-        $this->assertEquals($expectedStatFile, $sambaMock->getStatCache($parsedUrl));
+        $sambaMock->mkdir($parsedUrl);
     }
 
     /**
-     * @return array
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage dir failed for path 'to\dir'
      */
-    public function statCacheProvider()
+    public function testFailedPathInfoNotFoundInCommandOutput()
     {
-        return array(
-            'dir' => array(
-                'smb://user:password@host/base_path/to/dir',
-                'D',
-                '/tmp'
-            ),
-            'file' => array(
-                'smb://user:password@host/base_path/to/dir/file.doc',
-                'F',
-                '/etc/passwd'
-            ),
-        );
+        $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
+
+        $urlDir = "smb://user:password@host/base_path/to/dir";
+
+        $parsedUrl = $sambaMock->parseUrl($urlDir);
+
+        $output = <<<EOF
+Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
+  .                                   D        0  Fri Sep 13 11:13:28 2013
+  ..                                  D        0  Thu Sep  5 16:54:33 2013
+  success                             D        0  Thu Oct  3 12:42:46 2013
+  test                                A        2  Fri Jun 28 21:13:51 2013
+  error                               D        0  Wed Sep 11 18:53:11 2013
+  tmp                                 D        0  Thu Oct  3 12:42:46 2013
+  source                              D        0  Thu Oct  3 12:42:46 2013
+
+                37382 blocks of size 524288. 29328 blocks available
+EOF;
+        $outputStream = $this->convertStringToResource($output);
+
+        $sambaMock
+            ->expects($this->once())
+            ->method('getProcessResource')
+            ->will($this->returnValue($outputStream));
+
+        $sambaMock->info($parsedUrl);
     }
 }

@@ -12,11 +12,6 @@ class SambaStreamWrapper
     protected $client;
 
     /**
-     * @var array
-     */
-    protected $dir_cache = array();
-
-    /**
      * @var resource
      */
     protected $stream;
@@ -24,7 +19,7 @@ class SambaStreamWrapper
     /**
      * @var SambaUrl
      */
-    protected $url;
+    protected $stream_url;
 
     /**
      * @var string
@@ -44,24 +39,17 @@ class SambaStreamWrapper
     /**
      * @var array
      */
-    public $dir = array();
+    protected $dir_list = array();
 
     /**
-     * @var int
+     * @var resource
      */
-    protected $dir_index = -1;
-
-    public function __construct(SambaClient $client = null)
-    {
-        if ($client) {
-            $this->setClient($client);
-        }
-    }
+    public $context;
 
     /**
      * @param SambaClient $client
      */
-    public function setClient(SambaClient $client)
+    public function __construct(SambaClient $client = null)
     {
         $this->client = $client;
     }
@@ -69,7 +57,7 @@ class SambaStreamWrapper
     /**
      * @return SambaClient
      */
-    public function getClient()
+    protected function client()
     {
         if (null === $this->client) {
             $this->client = new SambaClient();
@@ -84,31 +72,23 @@ class SambaStreamWrapper
      */
     public function dir_opendir($path, $options)
     {
-        if ($d = $this->get_dir_cache($path)) {
-            $this->dir = $d;
-            $this->dir_index = 0;
+        $url = $this->client()->parseUrl($path);
 
-            return true;
-        }
-        $purl = $this->getClient()->parseUrl($path);
-        switch ($purl->getType()) {
+        switch ($url->getType()) {
             case SambaUrl::TYPE_HOST:
-                if ($o = $this->getClient()->look($purl)) {
-                    $this->dir = $o['disk'];
-                    $this->dir_index = 0;
+                if ($output = $this->client()->look($url)) {
+                    $this->set_dir_cache($output['disk']);
                 } else {
-                    throw new SambaException("dir_opendir(): list failed for host '{$purl->getHost()}'");
+                    throw new SambaException("dir_opendir(): list failed for host '{$url->getHost()}'");
                 }
                 break;
             case SambaUrl::TYPE_SHARE:
             case SambaUrl::TYPE_PATH:
-                if ($o = $this->getClient()->dir($purl)) {
-                    $this->dir = array_keys($o['info']);
-                    $this->dir_index = 0;
-                    $this->add_dir_cache($path, $this->dir);
+                $output = $this->client()->dir($url, '\*');
+                if (isset($output['info'])) {
+                    $this->set_dir_cache(array_keys($output['info']));
                 } else {
-                    $this->dir = array();
-                    $this->dir_index = 0;
+                    $this->set_dir_cache(array());
                 }
                 break;
             default:
@@ -119,11 +99,21 @@ class SambaStreamWrapper
     }
 
     /**
+     * @param array $dir
+     */
+    protected function set_dir_cache(array $dir)
+    {
+        $this->dir_list = $dir;
+        reset($this->dir_list);
+    }
+
+    /**
      * @return string
      */
     public function dir_readdir()
     {
-        return ($this->dir_index < count($this->dir)) ? $this->dir[$this->dir_index++] : false;
+        list(,$dir) = each($this->dir_list);
+        return (null !== $dir) ? $dir : false;
     }
 
     /**
@@ -131,7 +121,8 @@ class SambaStreamWrapper
      */
     public function dir_rewinddir()
     {
-        $this->dir_index = 0;
+        reset($this->dir_list);
+        return true;
     }
 
     /**
@@ -139,34 +130,8 @@ class SambaStreamWrapper
      */
     public function dir_closedir()
     {
-        $this->dir = array();
-        $this->dir_index = -1;
-
+        $this->set_dir_cache(array());
         return true;
-    }
-
-    /**
-     * @param string $path
-     * @param string $content
-     * @return string
-     */
-    protected function add_dir_cache($path, $content)
-    {
-        return $this->dir_cache[$path] = $content;
-    }
-
-    /**
-     * @param string $path
-     * @return bool
-     */
-    protected function get_dir_cache($path)
-    {
-        return isset($this->dir_cache[$path]) ? $this->dir_cache[$path] : false;
-    }
-
-    protected function clear_dir_cache()
-    {
-        $this->dir_cache = array();
     }
 
     /**
@@ -179,7 +144,7 @@ class SambaStreamWrapper
     public function stream_open($url, $mode, $options, &$opened_path)
     {
         $this->mode = $mode;
-        $this->url = $purl = $this->getClient()->parseUrl($url);
+        $this->stream_url = $purl = $this->client()->parseUrl($url);
         if (!$purl->isPath()) {
             throw new SambaException('stream_open(): error in URL');
         }
@@ -190,14 +155,13 @@ class SambaStreamWrapper
             case 'a':
             case 'a+':
                 $this->tmpfile = tempnam('/tmp', 'smb.down.');
-                $this->getClient()->get($purl, $this->tmpfile);
+                $this->client()->get($purl, $this->tmpfile);
                 break;
             case 'w':
             case 'w+':
             case 'wb':
             case 'x':
             case 'x+':
-                $this->clear_dir_cache();
                 $this->tmpfile = tempnam('/tmp', 'smb.up.');
         }
         $this->stream = fopen($this->tmpfile, $mode);
@@ -253,7 +217,8 @@ class SambaStreamWrapper
      */
     public function stream_seek($offset, $whence = SEEK_SET)
     {
-        return fseek($this->stream, $offset, $whence);
+        $pos = fseek($this->stream, $offset, $whence);
+        return 0 === $pos ? true : false;
     }
 
     /**
@@ -262,7 +227,7 @@ class SambaStreamWrapper
     public function stream_flush()
     {
         if ($this->mode != 'r' && $this->need_flush) {
-            $this->getClient()->put($this->url, $this->tmpfile);
+            $this->client()->put($this->stream_url, $this->tmpfile);
             $this->need_flush = false;
         }
         return true;
@@ -273,30 +238,32 @@ class SambaStreamWrapper
      */
     public function stream_stat()
     {
-        return $this->url_stat($this->url->getUrl());
+        return $this->url_stat($this->stream_url->getUrl());
     }
 
     /**
      * @param string $path
-     * @return array
+     * @return bool
      */
     public function unlink($path)
     {
-        $url = $this->getClient()->parseUrl($path);
-        return $this->getClient()->del($url);
+        $url = $this->client()->parseUrl($path);
+        $this->client()->del($url);
+        return true;
     }
 
     /**
      * @param string $path_from
      * @param string $path_to
-     * @return array
+     * @return bool
      */
     public function rename($path_from, $path_to)
     {
-        $url_from = $this->getClient()->parseUrl($path_from);
-        $url_to = $this->getClient()->parseUrl($path_to);
+        $url_from = $this->client()->parseUrl($path_from);
+        $url_to = $this->client()->parseUrl($path_to);
 
-        return $this->getClient()->rename($url_from, $url_to);
+        $this->client()->rename($url_from, $url_to);
+        return true;
     }
 
     /**
@@ -307,18 +274,20 @@ class SambaStreamWrapper
      */
     public function mkdir($path, $mode, $options)
     {
-        $url = $this->getClient()->parseUrl($path);
-        return $this->getClient()->mkdir($url);
+        $url = $this->client()->parseUrl($path);
+        $this->client()->mkdir($url);
+        return true;
     }
 
     /**
-     * @param $path
+     * @param string $path
      * @return bool
      */
     public function rmdir($path)
     {
-        $url = $this->getClient()->parseUrl($path);
-        return $this->getClient()->rmdir($url);
+        $url = $this->client()->parseUrl($path);
+        $this->client()->rmdir($url);
+        return true;
     }
 
     /**
@@ -328,16 +297,58 @@ class SambaStreamWrapper
      */
     public function url_stat($path, $flags = STREAM_URL_STAT_LINK)
     {
-        $url = $this->getClient()->parseUrl($path);
-        return $this->getClient()->urlStat($url);
+        $url = $this->client()->parseUrl($path);
+        try {
+            $info = $this->client()->info($url);
+            return $this->get_stat($info);
+        } catch (SambaException $e) {
+            if ($flags & STREAM_URL_STAT_QUIET) {
+                return false;
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array $info
+     * @return array
+     */
+    protected function get_stat(array $info)
+    {
+        $isFile = (strpos($info['attr'], 'D') === false);
+        $stat = ($isFile) ? $this->get_file_stat() : $this->get_dir_stat();
+
+        $stat[7] = $stat['size']
+                 = $info['size'];
+
+        $stat[8] = $stat[9]
+                 = $stat[10]
+                 = $stat['atime']
+                 = $stat['mtime']
+                 = $stat['ctime']
+                 = $info['time'];
+        return $stat;
+    }
+
+    /**
+     * @return array
+     */
+    protected function get_dir_stat()
+    {
+        return stat('/tmp');
+    }
+
+    /**
+     * @return array
+     */
+    protected function get_file_stat()
+    {
+        return stat('/etc/passwd');
     }
 
     public function __destruct()
     {
         if ($this->tmpfile != '') {
-            if ($this->need_flush) {
-                $this->stream_flush();
-            }
             unlink($this->tmpfile);
         }
     }

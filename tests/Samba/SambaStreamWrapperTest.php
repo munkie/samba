@@ -163,7 +163,7 @@ class SambaStreamWrapperTest extends TestCase
             ->method('look')
             ->will($this->returnValue($lookInfo));
 
-        $expectedStatInfoHost = stat("/tmp");
+        $expectedStatInfoHost = $this->createStatInfo('/tmp', 0, time());
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoHost = $wrapper->url_stat($urlHost);
@@ -226,7 +226,7 @@ class SambaStreamWrapperTest extends TestCase
             ->method('look')
             ->will($this->returnValue($shareLookInfo));
 
-        $expectedStatInfoShare = stat("/tmp");
+        $expectedStatInfoShare = $this->createStatInfo('/tmp', 0, time());
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoShare = $wrapper->url_stat($urlShare);
@@ -241,7 +241,7 @@ class SambaStreamWrapperTest extends TestCase
     {
         $sambaMock = $this->getSambaClientMock(array('look'));
 
-        $urlHost = "smb://user:password@host";
+        $urlHost = 'smb://user:password@host';
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->url_stat($urlHost);
@@ -305,7 +305,7 @@ class SambaStreamWrapperTest extends TestCase
         $executeOutput =  <<<EOF
 Anonymous login successful
 Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
-NT_STATUS_NO_SUCH_FILE listing \reportsw
+NT_STATUS_NO_SUCH_FILE listing \reports
 EOF;
 
         $executeOutputStream = $this->convertStringToResource($executeOutput);
@@ -330,9 +330,9 @@ EOF;
         $sambaMock = $this->getSambaClientMock(array('look'));
 
         $lookInfo = array(
-            "disk" => array("centrum"),
-            "server" => array("vm6"),
-            "workgroup" => array("cmag", "mygroup"),
+            'disk' => array('centrum'),
+            'server' => array('vm6'),
+            'workgroup' => array('cmag', 'mygroup'),
         );
 
         $sambaMock
@@ -343,7 +343,8 @@ EOF;
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->dir_opendir($urlHost, 0);
 
-        $this->assertEquals(array("centrum"), $wrapper->dir);
+        $this->assertEquals('centrum', $wrapper->dir_readdir());
+        $this->assertFalse($wrapper->dir_readdir());
     }
 
     public function testDirOpenDir()
@@ -371,7 +372,12 @@ EOF;
             'catalog-goods_1379058741.xml',
         );
 
-        $this->assertEquals($expectedDir, $wrapper->dir);
+        $dir = array();
+        while (false !== ($line = $wrapper->dir_readdir())) {
+            $dir[] = $line;
+        }
+
+        $this->assertSame($expectedDir, $dir);
     }
 
     /**

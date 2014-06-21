@@ -13,8 +13,12 @@
     bootstrap                   = "tests/bootstrap.php" >
 
     <testsuites>
-        <testsuite>
-            <directory>tests/Samba</directory>
+        <testsuite name="Unit">
+            <directory>tests/Samba/</directory>
+            <exclude>tests/Samba/Functional</exclude>
+        </testsuite>
+        <testsuite name="Functional">
+            <directory>tests/Samba/Functional</directory>
         </testsuite>
     </testsuites>
 

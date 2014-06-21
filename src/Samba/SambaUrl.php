@@ -259,15 +259,6 @@ class SambaUrl
     }
 
     /**
-     * @param string $name
-     * @return SambaUrl
-     */
-    public function getChildUrl($name)
-    {
-        return new self($this->getUrl() . '/' . urlencode($name));
-    }
-
-    /**
      * @return array
      */
     public function toArray()
