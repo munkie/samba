@@ -217,7 +217,8 @@ class SambaStreamWrapper
      */
     public function stream_seek($offset, $whence = SEEK_SET)
     {
-        return fseek($this->stream, $offset, $whence);
+        $pos = fseek($this->stream, $offset, $whence);
+        return 0 === $pos ? true : false;
     }
 
     /**
@@ -347,9 +348,6 @@ class SambaStreamWrapper
     public function __destruct()
     {
         if ($this->tmpfile != '') {
-            if ($this->need_flush) {
-                $this->stream_flush();
-            }
             unlink($this->tmpfile);
         }
     }
