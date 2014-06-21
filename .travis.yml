@@ -8,7 +8,7 @@ php:
 
 before_script:
     - bash -x bin/install_samba.sh
-    - echo 'date.timezone = "Europe/Moscow"' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
+#    - echo 'date.timezone = "Europe/Moscow"' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
     - composer --dev install
     - mkdir -p build/logs
 
