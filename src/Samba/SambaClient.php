@@ -170,7 +170,7 @@ class SambaClient
             return array(
                 'attr' => 'D',
                 'size' => 0,
-                'time' => time(),
+                'time' => 0,
             );
         }
 
@@ -209,7 +209,7 @@ class SambaClient
                     return array(
                         'attr' => 'D',
                         'size' => 0,
-                        'time' => time(),
+                        'time' => 0,
                     );
                 }
             }

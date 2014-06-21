@@ -163,7 +163,7 @@ class SambaStreamWrapperTest extends TestCase
             ->method('look')
             ->will($this->returnValue($lookInfo));
 
-        $expectedStatInfoHost = $this->createStatInfo('/tmp', 0, time());
+        $expectedStatInfoHost = $this->createStatInfo('/tmp', 0, 0);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoHost = $wrapper->url_stat($urlHost);
@@ -226,7 +226,7 @@ class SambaStreamWrapperTest extends TestCase
             ->method('look')
             ->will($this->returnValue($shareLookInfo));
 
-        $expectedStatInfoShare = $this->createStatInfo('/tmp', 0, time());
+        $expectedStatInfoShare = $this->createStatInfo('/tmp', 0, 0);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoShare = $wrapper->url_stat($urlShare);
