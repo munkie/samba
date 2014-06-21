@@ -12,11 +12,6 @@ class SambaStreamWrapper
     protected $client;
 
     /**
-     * @var array
-     */
-    protected $dir_cache = array();
-
-    /**
      * @var resource
      */
     protected $stream;
@@ -52,6 +47,11 @@ class SambaStreamWrapper
     protected $dir_index = -1;
 
     /**
+     * @var resource
+     */
+    public $context;
+
+    /**
      * @param SambaClient $client
      */
     public function __construct(SambaClient $client = null)
@@ -77,17 +77,12 @@ class SambaStreamWrapper
      */
     public function dir_opendir($path, $options)
     {
-        if ($d = $this->get_dir_cache($path)) {
-            $this->dir = $d;
-            $this->dir_index = 0;
-
-            return true;
-        }
         $url = $this->client()->parseUrl($path);
+
         switch ($url->getType()) {
             case SambaUrl::TYPE_HOST:
-                if ($o = $this->client()->look($url)) {
-                    $this->dir = $o['disk'];
+                if ($output = $this->client()->look($url)) {
+                    $this->dir = $output['disk'];
                     $this->dir_index = 0;
                 } else {
                     throw new SambaException("dir_opendir(): list failed for host '{$url->getHost()}'");
@@ -95,10 +90,10 @@ class SambaStreamWrapper
                 break;
             case SambaUrl::TYPE_SHARE:
             case SambaUrl::TYPE_PATH:
-                if ($o = $this->client()->dir($url, '\*')) {
-                    $this->dir = array_keys($o['info']);
+                $output = $this->client()->dir($url, '\*');
+                if (isset($output['info'])) {
+                    $this->dir = array_keys($output['info']);
                     $this->dir_index = 0;
-                    $this->add_dir_cache($path, $this->dir);
                 } else {
                     $this->dir = array();
                     $this->dir_index = 0;
@@ -139,30 +134,6 @@ class SambaStreamWrapper
     }
 
     /**
-     * @param string $path
-     * @param string $content
-     * @return string
-     */
-    protected function add_dir_cache($path, $content)
-    {
-        return $this->dir_cache[$path] = $content;
-    }
-
-    /**
-     * @param string $path
-     * @return bool
-     */
-    protected function get_dir_cache($path)
-    {
-        return isset($this->dir_cache[$path]) ? $this->dir_cache[$path] : false;
-    }
-
-    protected function clear_dir_cache()
-    {
-        $this->dir_cache = array();
-    }
-
-    /**
      * @param string $url
      * @param string $mode
      * @param int $options
@@ -190,7 +161,6 @@ class SambaStreamWrapper
             case 'wb':
             case 'x':
             case 'x+':
-                $this->clear_dir_cache();
                 $this->tmpfile = tempnam('/tmp', 'smb.up.');
         }
         $this->stream = fopen($this->tmpfile, $mode);

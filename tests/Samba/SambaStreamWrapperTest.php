@@ -330,9 +330,9 @@ EOF;
         $sambaMock = $this->getSambaClientMock(array('look'));
 
         $lookInfo = array(
-            "disk" => array("centrum"),
-            "server" => array("vm6"),
-            "workgroup" => array("cmag", "mygroup"),
+            'disk' => array('centrum'),
+            'server' => array('vm6'),
+            'workgroup' => array('cmag', 'mygroup'),
         );
 
         $sambaMock
@@ -343,7 +343,8 @@ EOF;
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->dir_opendir($urlHost, 0);
 
-        $this->assertEquals(array("centrum"), $wrapper->dir);
+        $this->assertEquals('centrum', $wrapper->dir_readdir());
+        $this->assertFalse($wrapper->dir_readdir());
     }
 
     public function testDirOpenDir()

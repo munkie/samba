@@ -2,93 +2,11 @@
 
 namespace Samba\Functional;
 
-use Samba\SambaStreamWrapper;
-use Samba\TestCase;
-use FilesystemIterator;
-use Symfony\Component\Filesystem\Filesystem;
-
-class StreamTest extends TestCase
+class FilesystemTest extends FunctionalTestCase
 {
-    /**
-     * @var string
-     */
-    protected static $home;
-
-    /**
-     * @var string
-     */
-    protected static $user;
-    /**
-     * @var string
-     */
-    protected static $hostname;
-
-    /**
-     * @var string
-     */
-    protected static $password = 'password';
-
-    /**
-     * @var string
-     */
-    protected static $host;
-
-    /**
-     * @var string
-     */
-    protected static $share = 'samba-test';
-
-    /**
-     * @var string
-     */
-    protected static $url;
-
-    /**
-     * @var
-     */
-    protected static $localPath;
-
-    public static function setUpBeforeClass()
-    {
-        self::$home = getenv('HOME');
-        self::$user = getenv('USER');
-        self::$hostname = gethostname();
-        self::$host = 'smb://' . self::$user . ':' . self::$password . '@' . self::$hostname;
-        self::$url = self::$host . '/' . self::$share;
-        self::$localPath = self::$home . '/' . self::$share;
-    }
-
-    protected function setUp()
-    {
-        if (!SambaStreamWrapper::is_registered()) {
-            SambaStreamWrapper::register();
-        }
-
-        $this->clearTestDir();
-    }
-
-    protected function clearTestDir()
-    {
-        $testDir = new FilesystemIterator(
-            self::$localPath,
-            FilesystemIterator::SKIP_DOTS | FilesystemIterator::CURRENT_AS_PATHNAME
-        );
-
-        $filesystem = new Filesystem();
-
-        foreach ($testDir as $filePath) {
-            $filesystem->remove($filePath);
-        }
-    }
-
-    protected function tearDown()
-    {
-        SambaStreamWrapper::unregister();
-    }
-
     public function testMkDir()
     {
-        $url = self::$url . '/test-dir';
+        $url = self::$shareUrl . '/test-dir';
         $result = mkdir($url);
         $this->assertTrue($result);
 
@@ -105,7 +23,7 @@ class StreamTest extends TestCase
         $this->assertTrue(file_exists($localPath));
         $this->assertTrue(is_dir($localPath));
 
-        $url = self::$url . '/test-dir';
+        $url = self::$shareUrl . '/test-dir';
         $result = rmdir($url);
         $this->assertTrue($result);
         $this->assertFalse(file_exists($localPath));
@@ -151,7 +69,7 @@ class StreamTest extends TestCase
         file_put_contents(self::$localPath . '/first-stat/second-stat/third.nfo', 'third');
 
         touch(self::$localPath . $path, 1403344333);
-        $url = $this->urlSub('{url}' . $path);
+        $url = self::$shareUrl . '/' . $path;
 
         $smbStat = stat($url);
         $this->assertInternalType('array', $smbStat);
@@ -175,29 +93,92 @@ class StreamTest extends TestCase
 
     public function testHostStat()
     {
-        $stat = stat(self::$host);
+        $stat = stat(self::$hostUrl);
         $this->assertStat($stat);
     }
 
     public function testShareStat()
     {
-        $stat = stat(self::$url);
+        $stat = stat(self::$shareUrl);
         $this->assertStat($stat);
     }
 
-    /**
-     * @param string $url
-     * @return string
-     */
-    protected function urlSub($url)
+    public function testDir()
     {
-        return strtr(
-            $url,
-            array(
-                '{hostname}' => self::$hostname,
-                '{share}' => self::$share,
-                '{url}' => self::$url,
-            )
-        );
+        $dirPath = self::$localPath . '/dir-test';
+
+        mkdir($dirPath);
+        file_put_contents($dirPath . '/one', 'content');
+        file_put_contents($dirPath . '/second.txt', 'more content');
+        mkdir($dirPath . '/sub-dir');
+
+        $dh = opendir(self::$shareUrl . '/dir-test');
+
+        $this->assertInternalType('resource', $dh);
+
+        $this->assertEquals('second.txt', readdir($dh));
+        $this->assertEquals('sub-dir', readdir($dh));
+        $this->assertEquals('one', readdir($dh));
+        $this->assertFalse(readdir($dh));
+
+        rewinddir($dh);
+
+        $this->assertEquals('second.txt', readdir($dh));
+
+        closedir($dh);
+    }
+
+    public function testDirShare()
+    {
+        file_put_contents(self::$localPath . '/one', 'content');
+        file_put_contents(self::$localPath . '/second.txt', 'more content');
+        mkdir(self::$localPath . '/sub-dir');
+
+        $dh = opendir(self::$shareUrl);
+
+        $this->assertInternalType('resource', $dh);
+
+        $this->assertEquals('second.txt', readdir($dh));
+        $this->assertEquals('sub-dir', readdir($dh));
+        $this->assertEquals('one', readdir($dh));
+        $this->assertFalse(readdir($dh));
+    }
+
+    public function testDirEmpty()
+    {
+        $dh = opendir(self::$shareUrl);
+
+        $this->assertInternalType('resource', $dh);
+
+        $this->assertFalse(readdir($dh));
+    }
+
+    public function testDirHost()
+    {
+        $dh = opendir(self::$hostUrl);
+        $files = array();
+        while (false !== ($file = readdir($dh))) {
+            $files[] = $file;
+        }
+
+        $this->assertContains(self::$share, $files);
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage NT_STATUS_OBJECT_PATH_NOT_FOUND listing
+     */
+    public function testDirNotExists()
+    {
+        opendir(self::$shareUrl . '/not-found-dir');
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage dir_opendir(): error in URL
+     */
+    public function testDirInvalidUrl()
+    {
+        opendir('smb://');
     }
 }
