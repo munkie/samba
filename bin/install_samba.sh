@@ -14,6 +14,7 @@ echo 'read only = no' | sudo tee -a /etc/samba/smb.conf
 echo 'browseable = yes' | sudo tee -a /etc/samba/smb.conf
 echo 'public = yes' | sudo tee -a /etc/samba/smb.conf
 echo 'writable = yes' | sudo tee -a /etc/samba/smb.conf
+echo 'guest ok = no' | sudo tee -a /etc/samba/smb.conf
 
 sudo restart smbd
 testparm -s
