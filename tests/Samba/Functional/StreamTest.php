@@ -48,11 +48,6 @@ class StreamTest extends TestCase
      */
     protected static $localPath;
 
-    /**
-     * @var string
-     */
-    protected $localFolder = '/home/mshamin/';
-
     public static function setUpBeforeClass()
     {
         self::$home = getenv('HOME');
@@ -119,18 +114,13 @@ class StreamTest extends TestCase
 
     /**
      * @dataProvider statNotExistsProvider
-     * @expectedException \PHPUnit_Framework_Error_Warning
-     * @expectedExceptionMessage stat failed for
+     * @expectedException \Samba\SambaException
+     *
+     * @param string $url
      */
     public function testStatNotExists($url)
     {
-        $url = strtr(
-            $url,
-            array(
-                '{hostname}' => self::$hostname,
-                '{share}' => self::$share
-            )
-        );
+        $url = $this->urlSub($url);
 
         $this->assertFalse(file_exists($url));
         stat($url);
@@ -148,12 +138,66 @@ class StreamTest extends TestCase
         );
     }
 
-    public function testStat()
+    /**
+     * @dataProvider pathStatProvider
+     * @param string $path
+     */
+    public function testPathStat($path)
     {
-        mkdir(self::$localPath . '/test-stat');
-        file_put_contents(self::$localPath . '/test-stat/file.nfo', 'text');
+        file_put_contents(self::$localPath . '/first.nfo', 'first');
+        mkdir(self::$localPath . '/first-stat');
+        file_put_contents(self::$localPath . '/first-stat/second.nfo', 'second');
+        mkdir(self::$localPath . '/first-stat/second-stat');
+        file_put_contents(self::$localPath . '/first-stat/second-stat/third.nfo', 'third');
 
-        $stat = stat(self::$url . '/test-stat');
-        $this->assertSame(array(), $stat);
+        touch(self::$localPath . $path, 1403344333);
+        $url = $this->urlSub('{url}' . $path);
+
+        $smbStat = stat($url);
+        $this->assertInternalType('array', $smbStat);
+        $this->assertArrayHasKey('mtime', $smbStat);
+        $this->assertEquals(1403344333, $smbStat['mtime']);
+    }
+
+    /**
+     * @return array
+     */
+    public function pathStatProvider()
+    {
+        return array(
+            'file first level' => array('/first.nfo', ),
+            'folder first level' => array('/first-stat'),
+            'file second level' => array('/first-stat/second.nfo'),
+            'folder second level' => array('/first-stat/second-stat'),
+            'file third level' => array('/first-stat/second-stat/third.nfo'),
+        );
+    }
+
+    public function testHostStat()
+    {
+        $stat = stat(self::$host);
+        $this->assertStat($stat);
+    }
+
+    public function testShareStat()
+    {
+        $stat = stat(self::$url);
+        $this->assertStat($stat);
+    }
+
+    /**
+     * @param string $url
+     * @return string
+     */
+    protected function urlSub($url)
+    {
+        return strtr(
+            $url,
+            array(
+                '{hostname}' => self::$hostname,
+                '{share}' => self::$share,
+                '{url}' => self::$url,
+            )
+        );
     }
 }

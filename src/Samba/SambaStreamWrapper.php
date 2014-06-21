@@ -72,19 +72,19 @@ class SambaStreamWrapper
 
             return true;
         }
-        $purl = $this->client->parseUrl($path);
-        switch ($purl->getType()) {
+        $url = $this->client->parseUrl($path);
+        switch ($url->getType()) {
             case SambaUrl::TYPE_HOST:
-                if ($o = $this->client->look($purl)) {
+                if ($o = $this->client->look($url)) {
                     $this->dir = $o['disk'];
                     $this->dir_index = 0;
                 } else {
-                    throw new SambaException("dir_opendir(): list failed for host '{$purl->getHost()}'");
+                    throw new SambaException("dir_opendir(): list failed for host '{$url->getHost()}'");
                 }
                 break;
             case SambaUrl::TYPE_SHARE:
             case SambaUrl::TYPE_PATH:
-                if ($o = $this->client->dir($purl)) {
+                if ($o = $this->client->dir($url, '\*')) {
                     $this->dir = array_keys($o['info']);
                     $this->dir_index = 0;
                     $this->add_dir_cache($path, $this->dir);
@@ -314,13 +314,51 @@ class SambaStreamWrapper
     {
         $url = $this->client->parseUrl($path);
         try {
-            return $this->client->urlStat($url);
+            $info = $this->client->info($url);
+            return $this->get_stat($info);
         } catch (SambaException $e) {
-            if ($flags ^ STREAM_URL_STAT_QUIET) {
-                trigger_error(sprintf('stat failed for %s', $path), E_USER_WARNING);
+            if ($flags & STREAM_URL_STAT_QUIET) {
+                return false;
             }
-            return false;
+            throw $e;
         }
+    }
+
+    /**
+     * @param array $info
+     * @return array
+     */
+    protected function get_stat(array $info)
+    {
+        $isFile = (strpos($info['attr'], 'D') === false);
+        $stat = ($isFile) ? $this->get_file_stat() : $this->get_dir_stat();
+
+        $stat[7] = $stat['size']
+                 = $info['size'];
+
+        $stat[8] = $stat[9]
+                 = $stat[10]
+                 = $stat['atime']
+                 = $stat['mtime']
+                 = $stat['ctime']
+                 = $info['time'];
+        return $stat;
+    }
+
+    /**
+     * @return array
+     */
+    protected function get_dir_stat()
+    {
+        return stat('/tmp');
+    }
+
+    /**
+     * @return array
+     */
+    protected function get_file_stat()
+    {
+        return stat('/etc/passwd');
     }
 
     public function __destruct()

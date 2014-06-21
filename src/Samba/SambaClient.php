@@ -4,15 +4,15 @@ namespace Samba;
 
 class SambaClient
 {
-    const SMB4PHP_AUTHMODE = "arg"; // set to 'env' to use USER environment variable
-    const SMB4PHP_SMBOPTIONS = "TCP_NODELAY IPTOS_LOWDELAY SO_KEEPALIVE SO_RCVBUF=8192 SO_SNDBUF=8192";
-    const SMB4PHP_SMBCLIENT = "smbclient";
-    const SMB4PHP_VERSION = "0.8";
+    const AUTHMODE = "arg"; // set to 'env' to use USER environment variable
+    const OPTIONS = "TCP_NODELAY IPTOS_LOWDELAY SO_KEEPALIVE SO_RCVBUF=8192 SO_SNDBUF=8192";
+    const CLIENT = "smbclient";
+    const VERSION = "0.8";
 
     /**
      * @var array
      */
-    protected $cache = array();
+    protected $infos = array();
 
     /**
      * @var array
@@ -25,7 +25,7 @@ class SambaClient
         '^\t---------[ ]+----[ ]+-------$' => 'skip',
         '^\tServer   [ ]+Comment$' => 'servers',
         '^\t---------[ ]+-------$' => 'skip',
-        '^\tWorkgroup[ ]+Master$' => 'workg',
+        '^\tWorkgroup[ ]+Master$' => 'workgroups',
         '^\t(.*)[ ]+(Disk|IPC)[ ]+IPC.*$' => 'skip',
         '^\tIPC\\\$(.*)[ ]+IPC' => 'skip',
         '^\t(.*)[ ]+(Disk)[ ]+(.*)$' => 'share',
@@ -70,7 +70,7 @@ class SambaClient
 
     /**
      * @param string $command
-     * @param array $url
+     * @param SambaUrl $url
      * @return array
      */
     public function execute($command, SambaUrl $url)
@@ -108,7 +108,7 @@ class SambaClient
     {
         $auth = '';
 
-        if (self::SMB4PHP_AUTHMODE == 'env') {
+        if (self::AUTHMODE == 'env') {
             putenv(sprintf('USER=%s%%%s', $url->getUser(), $url->getPass()));
         } elseif ($url->getUser()) {
             $auth .= ' -U ' . escapeshellarg($url->getUser() . '%' . $url->getPass());
@@ -129,7 +129,7 @@ class SambaClient
         $auth = $this->getAuth($url);
 
         $port = !$url->isDefaultPort() ? ' -p ' . escapeshellarg($url->getPort()) : '';
-        $options = '-O ' . escapeshellarg(self::SMB4PHP_SMBOPTIONS);
+        $options = '-O ' . escapeshellarg(self::OPTIONS);
 
         $output = $this->getProcessResource($params, $auth, $options, $port);
 
@@ -149,7 +149,7 @@ class SambaClient
                 case 'servers':
                     $mode = 'servers';
                     break;
-                case 'workg':
+                case 'workgroups':
                     $mode = 'workgroups';
                     break;
                 case 'share':
@@ -217,57 +217,92 @@ class SambaClient
      * @param SambaUrl $url
      * @return array
      */
-    public function urlStat(SambaUrl $url)
+    public function info(SambaUrl $url)
     {
-        if ($statFromCache = $this->getStatCache($url)) {
-            return $statFromCache;
+        if ($info = $this->getInfoCache($url)) {
+            return $info;
         }
-
-        $stat = array();
 
         switch ($url->getType()) {
             case SambaUrl::TYPE_HOST:
-                if ($lookInfo = $this->look($url)) {
-                    $stat = $this->getDirStat();
-                } else {
-                    throw new SambaException("url_stat(): list failed for host '{$url->getHost()}'");
-                }
+                $info = $this->hostInfo($url);
                 break;
             case SambaUrl::TYPE_SHARE:
-                if ($lookInfo = $this->look($url)) {
-                    $found = false;
-                    $lowerShare = strtolower($url->getShare()); # fix by Eric Leung
-                    foreach ($lookInfo['disk'] as $share) {
-                        if ($lowerShare == strtolower($share)) {
-                            $found = true;
-                            $stat = $this->getDirStat();
-                            break;
-                        }
-                    }
-                    if (!$found) {
-                        throw new SambaException(
-                            "url_stat(): disk resource '{$lowerShare}' not found in '{$url->getHost()}'"
-                        );
-                    }
-                }
+                $info = $this->shareInfo($url);
                 break;
             case SambaUrl::TYPE_PATH:
-                if ($output = $this->dir($url)) {
-                    $name = $url->getLastPath();
-                    if (isset($output['info'][$name])) {
-                        $stat = $this->setStatCache($url, $output['info'][$name]);
-                    } else {
-                        throw new SambaException("url_stat(): path '{$url->getPath()}' not found");
-                    }
-                } else {
-                    throw new SambaException("url_stat(): dir failed for path '{$url->getPath()}'");
-                }
+                $info = $this->pathInfo($url);
                 break;
             default:
                 throw new SambaException('error in URL');
         }
 
-        return $stat;
+        return $info;
+    }
+
+    /**
+     * @param SambaUrl $url
+     * @return array
+     * @throws SambaException
+     */
+    protected function hostInfo(SambaUrl $url)
+    {
+        if ($lookInfo = $this->look($url)) {
+            return array(
+                'attr' => 'D',
+                'size' => 0,
+                'time' => time(),
+            );
+        } else {
+            throw new SambaException("url_stat(): list failed for host '{$url->getHost()}'");
+        }
+    }
+
+    /**
+     * @param SambaUrl $url
+     * @return array
+     * @throws SambaException
+     */
+    protected function pathInfo(SambaUrl $url)
+    {
+        if ($output = $this->dir($url)) {
+            $name = $url->getLastPath();
+            if (isset($output['info'][$name])) {
+                $info = $output['info'][$name];
+                $this->setInfoCache($url, $info);
+                return $info;
+            } else {
+                throw new SambaException("url_stat(): path '{$url->getPath()}' not found");
+            }
+        } else {
+            throw new SambaException("url_stat(): dir failed for path '{$url->getPath()}'");
+        }
+    }
+
+    /**
+     * @param SambaUrl $url
+     * @return array
+     * @throws SambaException
+     */
+    protected function shareInfo(SambaUrl $url)
+    {
+        $lowerShare = strtolower($url->getShare()); # fix by Eric Leung
+
+        if ($lookInfo = $this->look($url)) {
+            foreach ($lookInfo['disk'] as $share) {
+                if ($lowerShare == strtolower($share)) {
+                    return array(
+                        'attr' => 'D',
+                        'size' => 0,
+                        'time' => time(),
+                    );
+                }
+            }
+        }
+
+        throw new SambaException(
+            "url_stat(): disk resource '{$lowerShare}' not found in '{$url->getHost()}'"
+        );
     }
 
     /**
@@ -275,34 +310,29 @@ class SambaClient
      * @param $info
      * @return array
      */
-    public function setStatCache(SambaUrl $url, array $info)
+    public function setInfoCache(SambaUrl $url, array $info)
     {
-        $isFile = (strpos($info['attr'], 'D') === false);
-        $stat = ($isFile) ? $this->getFileStat() : $this->getDirStat();
-        $stat[7] = $stat['size'] = $info['size'];
-        $stat[8] = $stat[9] = $stat[10] = $stat['atime'] = $stat['mtime'] = $stat['ctime'] = $info['time'];
-
-        return $this->cache[$url->getUrl()] = $stat;
+        return $this->infos[$url->getUrl()] = $info;
     }
 
     /**
      * @param SambaUrl $url
      * @return bool
      */
-    public function getStatCache(SambaUrl $url)
+    public function getInfoCache(SambaUrl $url)
     {
-        return isset($this->cache[$url->getUrl()]) ? $this->cache[$url->getUrl()] : false;
+        return isset($this->infos[$url->getUrl()]) ? $this->infos[$url->getUrl()] : false;
     }
 
     /**
      * @param SambaUrl $url
      */
-    public function clearStatCache(SambaUrl $url = null)
+    public function clearInfoCache(SambaUrl $url = null)
     {
         if (null === $url) {
-            $this->cache = array();
-        } elseif (isset($this->cache[$url->getUrl()])) {
-            unset($this->cache[$url->getUrl()]);
+            $this->infos = array();
+        } elseif (isset($this->infos[$url->getUrl()])) {
+            unset($this->infos[$url->getUrl()]);
         }
     }
 
@@ -316,7 +346,7 @@ class SambaClient
     public function getProcessResource($params, $auth, $options, $port)
     {
         return popen(
-            self::SMB4PHP_SMBCLIENT . " -N {$auth} {$options} {$port} {$options} {$params} 2>/dev/null",
+            self::CLIENT . " -N {$auth} {$options} {$port} {$options} {$params} 2>/dev/null",
             'r'
         );
     }
@@ -351,23 +381,24 @@ class SambaClient
      */
     public function put(SambaUrl $url, $file)
     {
-        $this->clearStatCache($url);
+        $this->clearInfoCache($url);
         $command = sprintf('put "%s" "%s"', $file, $url->getPath());
         return $this->execute($command, $url);
     }
 
     /**
      * @param SambaUrl $url
+     * @param string $mask
      * @return array
      */
-    public function dir(SambaUrl $url)
+    public function dir(SambaUrl $url, $mask = '')
     {
-        $command = sprintf('dir "%s\*"', $url->getPath());
+        $command = sprintf('dir "%s%s"', $url->getPath(), $mask);
         $result = $this->execute($command, $url);
 
         if (isset($result['info'])) {
             foreach ($result['info'] as $name => $info) {
-                $this->setStatCache($url->getChildUrl($name), $info);
+                $this->setInfoCache($url->getChildUrl($name), $info);
             }
         }
 
@@ -381,7 +412,7 @@ class SambaClient
     public function del(SambaUrl $url)
     {
         $this->checkUrlIsPath($url, 'del');
-        $this->clearStatCache($url);
+        $this->clearInfoCache($url);
         $command = sprintf('del "%s"', $url->getPath());
         return $this->execute($command, $url);
     }
@@ -400,7 +431,7 @@ class SambaClient
         $this->checkUrlIsPath($from, 'rename');
         $this->checkUrlIsPath($to, 'rename');
 
-        $this->clearStatCache($from);
+        $this->clearInfoCache($from);
         $command = sprintf('rename "%s" "%s"', $from->getPath(), $to->getPath());
         return $this->execute($command, $to);
     }
@@ -412,7 +443,7 @@ class SambaClient
     public function mkdir(SambaUrl $url)
     {
         $this->checkUrlIsPath($url, 'mkdir');
-        $this->clearStatCache($url);
+        $this->clearInfoCache($url);
         $command = sprintf('mkdir "%s"', $url->getPath());
         return $this->execute($command, $url);
     }
@@ -425,7 +456,7 @@ class SambaClient
     {
         $this->checkUrlIsPath($url, 'rmdir');
 
-        $this->clearStatCache($url);
+        $this->clearInfoCache($url);
         $command = sprintf('rmdir "%s"', $url->getPath());
         return $this->execute($command, $url);
     }
@@ -440,21 +471,5 @@ class SambaClient
         if (!$url->isPath()) {
             throw new SambaException($command . ': error - URL should be path');
         }
-    }
-
-    /**
-     * @return array
-     */
-    protected function getDirStat()
-    {
-        return stat('/tmp');
-    }
-
-    /**
-     * @return array
-     */
-    protected function getFileStat()
-    {
-        return stat('/etc/passwd');
     }
 }

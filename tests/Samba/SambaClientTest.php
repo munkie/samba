@@ -212,7 +212,7 @@ EOF;
             ->method('getProcessResource')
             ->will($this->returnValue($openDirInfoStream));
 
-        $dirInfo = $sambaMock->dir($parsedUrlDir);
+        $dirInfo = $sambaMock->dir($parsedUrlDir, '\*');
 
         $expectedDirInfo = $this->getExpectedDirInfo();
 
@@ -278,7 +278,6 @@ EOF;
             'size' => 4,
             'time' => 777,
         );
-        $expectedStatFile = $this->createStatInfo('/etc/passwd', 4, 777);
 
         $infoDir = array(
             'attr' => 'D',
@@ -286,51 +285,47 @@ EOF;
             'time' => 777,
         );
 
-        $expectedStatDir = $this->createStatInfo('/tmp', $infoDir['size'], $infoDir['time']);
+        $this->assertEquals($infoFile, $sambaMock->setInfoCache($parsedUrlFile, $infoFile));
+        $this->assertEquals($infoDir, $sambaMock->setInfoCache($parsedUrlDir, $infoDir));
 
-        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrlFile, $infoFile));
-        $this->assertEquals($expectedStatDir, $sambaMock->setStatCache($parsedUrlDir, $infoDir));
+        $this->assertEquals($infoFile, $sambaMock->getInfoCache($parsedUrlFile));
+        $this->assertEquals($infoDir, $sambaMock->getInfoCache($parsedUrlDir));
 
-        $this->assertEquals($expectedStatFile, $sambaMock->getStatCache($parsedUrlFile));
-        $this->assertEquals($expectedStatDir, $sambaMock->getStatCache($parsedUrlDir));
+        $sambaMock->clearInfoCache($parsedUrlFile);
 
-        $sambaMock->clearStatCache($parsedUrlFile);
+        $this->assertFalse($sambaMock->getInfoCache($parsedUrlFile));
+        $this->assertEquals($infoDir, $sambaMock->getInfoCache($parsedUrlDir));
 
-        $this->assertFalse($sambaMock->getStatCache($parsedUrlFile));
-        $this->assertEquals($expectedStatDir, $sambaMock->getStatCache($parsedUrlDir));
+        $this->assertEquals($infoFile, $sambaMock->setInfoCache($parsedUrlFile, $infoFile));
 
-        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrlFile, $infoFile));
+        $sambaMock->clearInfoCache();
 
-        $sambaMock->clearStatCache();
-
-        $this->assertFalse($sambaMock->getStatCache($parsedUrlFile));
-        $this->assertFalse($sambaMock->getStatCache($parsedUrlDir));
+        $this->assertFalse($sambaMock->getInfoCache($parsedUrlFile));
+        $this->assertFalse($sambaMock->getInfoCache($parsedUrlDir));
     }
 
     /**
      * @dataProvider statCacheProvider
      * @param string $url
      * @param string $mode
-     * @param string $file
      */
-    public function testStatCache($url, $mode, $file)
+    public function testStatCache($url, $mode)
     {
         $sambaMock = $this->getSambaClientMock(array('execute'));
 
         $parsedUrl = $sambaMock->parseUrl($url);
 
-        $this->assertFalse($sambaMock->getStatCache($parsedUrl));
+        $this->assertFalse($sambaMock->getInfoCache($parsedUrl));
 
         $info = array(
             'attr' => $mode,
             'size' => 4,
             'time' => 777,
         );
-        $expectedStatFile = $this->createStatInfo($file, $info['size'], $info['time']);
 
-        $this->assertEquals($expectedStatFile, $sambaMock->setStatCache($parsedUrl, $info));
+        $this->assertEquals($info, $sambaMock->setInfoCache($parsedUrl, $info));
 
-        $this->assertEquals($expectedStatFile, $sambaMock->getStatCache($parsedUrl));
+        $this->assertEquals($info, $sambaMock->getInfoCache($parsedUrl));
     }
 
     /**
@@ -342,12 +337,10 @@ EOF;
             'dir' => array(
                 'smb://user:password@host/base_path/to/dir',
                 'D',
-                '/tmp'
             ),
             'file' => array(
                 'smb://user:password@host/base_path/to/dir/file.doc',
                 'F',
-                '/etc/passwd'
             ),
         );
     }

@@ -267,6 +267,11 @@ class SambaUrl
         return new self($this->getUrl() . '/' . urlencode($name));
     }
 
+    public function getParentUrl()
+    {
+
+    }
+
     /**
      * @return array
      */

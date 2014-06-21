@@ -114,15 +114,41 @@ class TestCase extends \PHPUnit_Framework_TestCase
      */
     protected function createStatInfo($file, $size, $time)
     {
-        $statInfo = stat($file);
-        $statInfo[7] = $statInfo['size'] = $size;
-        $statInfo[8]
-            = $statInfo[9]
-            = $statInfo[10]
-            = $statInfo['atime']
-            = $statInfo['mtime']
-            = $statInfo['ctime']
+        $stat = stat($file);
+        $stat[7] = $stat['size'] = $size;
+        $stat[8]
+            = $stat[9]
+            = $stat[10]
+            = $stat['atime']
+            = $stat['mtime']
+            = $stat['ctime']
             = $time;
-        return $statInfo;
+        return $stat;
+    }
+
+    /**
+     * @param array $stat
+     */
+    protected function assertStat(array $stat)
+    {
+        $expectedKeys = array_merge(
+            range(0, 12),
+            array(
+                'dev',
+                'ino',
+                'mode',
+                'nlink',
+                'uid',
+                'gid',
+                'rdev',
+                'size',
+                'atime',
+                'mtime',
+                'ctime',
+                'blksize',
+                'blocks',
+            )
+        );
+        $this->assertEquals($expectedKeys, array_keys($stat));
     }
 }
