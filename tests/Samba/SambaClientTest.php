@@ -350,4 +350,34 @@ EOF;
             ),
         );
     }
+
+    public function testCommandWithDomainAndCustomPort()
+    {
+        $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
+
+        $expectedParams = '-d 0 \'//hostname/share\' -c \'mkdir "dir"\'';
+        $expectedOptions = array(
+            '-O' => SambaClient::SOCKET_OPTIONS,
+            '-U' => 'user%password',
+            '-W' => 'domain.local',
+            '-p' => 777,
+        );
+
+        $outputStream = $this->convertStringToResource('');
+
+        $sambaMock
+            ->expects($this->once())
+            ->method('getProcessResource')
+            ->with(
+                $this->equalTo($expectedParams),
+                $this->equalTo($expectedOptions)
+            )
+            ->will($this->returnValue($outputStream))
+        ;
+
+        $url = 'smb://domain.local;user:password@hostname:777/share/dir';
+
+        $parsedUrl = $sambaMock->parseUrl($url);
+        $sambaMock->mkdir($parsedUrl);
+    }
 }
