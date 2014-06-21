@@ -183,6 +183,10 @@ class SambaClientTest extends TestCase
 
     public function testDirRequest()
     {
+        // workaround for expected dates which are parsed with moscow timezone
+        $previousTZ = date_default_timezone_get();
+        date_default_timezone_set('Europe/Moscow');
+
         $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
         $urlDir = "smb://user:password@host/base_path/to/dir";
@@ -217,6 +221,8 @@ EOF;
         $expectedDirInfo = $this->getExpectedDirInfo();
 
         $this->assertEquals($expectedDirInfo, $dirInfo);
+
+        date_default_timezone_set($previousTZ);
     }
 
     /**
