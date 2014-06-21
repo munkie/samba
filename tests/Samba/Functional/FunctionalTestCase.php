@@ -12,7 +12,7 @@ class FunctionalTestCase extends TestCase
     /**
      * @var string
      */
-    protected static $home;
+    protected static $homePath;
 
     /**
      * @var string
@@ -46,16 +46,16 @@ class FunctionalTestCase extends TestCase
     /**
      * @var string
      */
-    protected static $localPath;
+    protected static $sharePath;
 
     public static function setUpBeforeClass()
     {
-        self::$home = getenv('HOME');
+        self::$homePath = getenv('HOME');
         self::$user = getenv('USER');
         self::$hostname = gethostname();
         self::$hostUrl = 'smb://' . self::$user . ':' . self::$password . '@' . self::$hostname;
         self::$shareUrl = self::$hostUrl . '/' . self::$share;
-        self::$localPath = self::$home . '/' . self::$share;
+        self::$sharePath = self::$homePath . '/' . self::$share;
     }
 
     protected function setUp()
@@ -75,7 +75,7 @@ class FunctionalTestCase extends TestCase
     protected function clearTestDir()
     {
         $testDir = new FilesystemIterator(
-            self::$localPath,
+            self::$sharePath,
             FilesystemIterator::SKIP_DOTS | FilesystemIterator::CURRENT_AS_PATHNAME
         );
 

@@ -10,14 +10,14 @@ class FilesystemTest extends FunctionalTestCase
         $result = mkdir($url);
         $this->assertTrue($result);
 
-        $localPath = self::$localPath . '/test-dir';
+        $localPath = self::$sharePath . '/test-dir';
         $this->assertTrue(file_exists($localPath));
         $this->assertTrue(is_dir($localPath));
     }
 
     public function testRmDir()
     {
-        $localPath = self::$localPath . '/test-dir';
+        $localPath = self::$sharePath . '/test-dir';
         mkdir($localPath);
 
         $this->assertTrue(file_exists($localPath));
@@ -62,13 +62,13 @@ class FilesystemTest extends FunctionalTestCase
      */
     public function testPathStat($path)
     {
-        file_put_contents(self::$localPath . '/first.nfo', 'first');
-        mkdir(self::$localPath . '/first-stat');
-        file_put_contents(self::$localPath . '/first-stat/second.nfo', 'second');
-        mkdir(self::$localPath . '/first-stat/second-stat');
-        file_put_contents(self::$localPath . '/first-stat/second-stat/third.nfo', 'third');
+        file_put_contents(self::$sharePath . '/first.nfo', 'first');
+        mkdir(self::$sharePath . '/first-stat');
+        file_put_contents(self::$sharePath . '/first-stat/second.nfo', 'second');
+        mkdir(self::$sharePath . '/first-stat/second-stat');
+        file_put_contents(self::$sharePath . '/first-stat/second-stat/third.nfo', 'third');
 
-        touch(self::$localPath . $path, 1403344333);
+        touch(self::$sharePath . $path, 1403344333);
         $url = self::$shareUrl . '/' . $path;
 
         $smbStat = stat($url);
@@ -105,7 +105,7 @@ class FilesystemTest extends FunctionalTestCase
 
     public function testDir()
     {
-        $dirPath = self::$localPath . '/dir-test';
+        $dirPath = self::$sharePath . '/dir-test';
 
         mkdir($dirPath);
         file_put_contents($dirPath . '/one', 'content');
@@ -135,9 +135,9 @@ class FilesystemTest extends FunctionalTestCase
 
     public function testDirShare()
     {
-        file_put_contents(self::$localPath . '/one', 'content');
-        file_put_contents(self::$localPath . '/second.txt', 'more content');
-        mkdir(self::$localPath . '/sub-dir');
+        file_put_contents(self::$sharePath . '/one', 'content');
+        file_put_contents(self::$sharePath . '/second.txt', 'more content');
+        mkdir(self::$sharePath . '/sub-dir');
 
         $dh = opendir(self::$shareUrl);
 
@@ -188,5 +188,66 @@ class FilesystemTest extends FunctionalTestCase
     public function testDirInvalidUrl()
     {
         opendir('smb://');
+    }
+
+    public function testUnlink()
+    {
+        file_put_contents(self::$sharePath . '/test-file.txt', 'content');
+
+        $fileUrl = self::$shareUrl . '/test-file.txt';
+
+        $this->assertTrue(file_exists($fileUrl));
+        $this->assertTrue(is_file($fileUrl));
+        $this->assertFalse(is_dir($fileUrl));
+
+        $result = unlink($fileUrl);
+        $this->assertTrue($result);
+
+        clearstatcache();
+        $this->assertFalse(file_exists($fileUrl));
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage NT_STATUS_NO_SUCH_FILE listing
+     */
+    public function testUnlinkDir()
+    {
+        mkdir(self::$sharePath . '/test-dir');
+
+        $dirUrl = self::$shareUrl . '/test-dir';
+
+        $this->assertTrue(file_exists($dirUrl));
+        $this->assertFalse(is_file($dirUrl));
+        $this->assertTrue(is_dir($dirUrl));
+
+        unlink($dirUrl);
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage del: error - URL should be path
+     */
+    public function testUnlinkShare()
+    {
+        unlink(self::$shareUrl);
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage del: error - URL should be path
+     */
+    public function testUnlinkHost()
+    {
+        unlink(self::$hostUrl);
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage del: error - URL should be path
+     */
+    public function testUnlinkInvalidUrl()
+    {
+        unlink('smb://');
     }
 }

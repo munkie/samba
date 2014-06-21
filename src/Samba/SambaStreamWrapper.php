@@ -242,12 +242,13 @@ class SambaStreamWrapper
 
     /**
      * @param string $path
-     * @return array
+     * @return bool
      */
     public function unlink($path)
     {
         $url = $this->client()->parseUrl($path);
-        return $this->client()->del($url);
+        $this->client()->del($url);
+        return true;
     }
 
     /**
