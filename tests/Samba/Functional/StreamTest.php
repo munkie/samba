@@ -102,4 +102,13 @@ class StreamTest extends FunctionalTestCase
             'invalid' => array('smb://'),
         );
     }
+
+    public function testStat()
+    {
+        $fh = fopen(self::$shareUrl . '/LICENSE', 'r');
+
+        $stat = fstat($fh);
+        $this->assertStat($stat);
+        $this->assertEquals(1066, $stat['size']);
+    }
 }

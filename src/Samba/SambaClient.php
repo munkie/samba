@@ -100,18 +100,6 @@ class SambaClient
     }
 
     /**
-     * @param SambaUrl $url
-     * @return string
-     */
-    protected function getAuth(SambaUrl $url)
-    {
-        $auth = '';
-
-
-        return $auth;
-    }
-
-    /**
      * @param string $params
      * @param SambaUrl $url
      * @throws SambaException
