@@ -4,8 +4,7 @@ namespace Samba;
 
 class SambaClient
 {
-    const AUTHMODE = "arg"; // set to 'env' to use USER environment variable
-    const OPTIONS = "TCP_NODELAY IPTOS_LOWDELAY SO_KEEPALIVE SO_RCVBUF=8192 SO_SNDBUF=8192";
+    const SOCKET_OPTIONS = "TCP_NODELAY IPTOS_LOWDELAY SO_KEEPALIVE SO_RCVBUF=8192 SO_SNDBUF=8192";
     const CLIENT = "smbclient";
     const VERSION = "0.8";
 
@@ -108,107 +107,49 @@ class SambaClient
     {
         $auth = '';
 
-        if (self::AUTHMODE == 'env') {
-            putenv(sprintf('USER=%s%%%s', $url->getUser(), $url->getPass()));
-        } elseif ($url->getUser()) {
-            $auth .= ' -U ' . escapeshellarg($url->getUser() . '%' . $url->getPass());
-        }
-        if ($url->getDomain()) {
-            $auth .= ' -W ' . escapeshellarg($url->getDomain());
-        }
+
         return $auth;
     }
 
     /**
      * @param string $params
      * @param SambaUrl $url
+     * @throws SambaException
      * @return array
      */
     public function client($params, SambaUrl $url)
     {
-        $auth = $this->getAuth($url);
+        $options = $this->createOptions($url);
+        $output = $this->getProcessResource($params, $options);
 
-        $port = !$url->isDefaultPort() ? ' -p ' . escapeshellarg($url->getPort()) : '';
-        $options = '-O ' . escapeshellarg(self::OPTIONS);
-
-        $output = $this->getProcessResource($params, $auth, $options, $port);
-
-        $info = array();
-
-        while (($line = fgets($output)) !== false) {
-            $i = array();
-
-            list($tag, $regs) = $this->getTag($line);
-
-            switch ($tag) {
-                case 'skip':
-                    continue;
-                case 'shares':
-                    $mode = 'shares';
-                    break;
-                case 'servers':
-                    $mode = 'servers';
-                    break;
-                case 'workgroups':
-                    $mode = 'workgroups';
-                    break;
-                case 'share':
-                    list($name, $type) = array(
-                        trim(substr($line, 1, 15)),
-                        trim(strtolower(substr($line, 17, 10)))
-                    );
-                    $i = ($type != 'disk' && preg_match('/^(.*) Disk/', $line, $regs))
-                        ? array(trim($regs[1]), 'disk')
-                        : array($name, 'disk');
-                    break;
-                case 'srvorwg':
-                    list ($name, $master) = array(
-                        strtolower(trim(substr($line, 1, 21))),
-                        strtolower(trim(substr($line, 22)))
-                    );
-                    $i = (isset($mode) && $mode == 'servers')
-                        ? array($name, "server")
-                        : array($name, "workgroup", $master);
-                    break;
-                case 'files':
-                    list ($attr, $name) = preg_match("/^(.*)[ ]+([D|A|H|S|R]+)$/", trim($regs[1]), $regs2)
-                        ? array(trim($regs2[2]), trim($regs2[1]))
-                        : array('', trim($regs[1]));
-                    list ($his, $im) = array(
-                        explode(':', $regs[6]),
-                        1 + strpos("JanFebMarAprMayJunJulAugSepOctNovDec", $regs[4]) / 3
-                    );
-                    $i = ($name != '.' && $name != '..')
-                        ? array(
-                            $name,
-                            (strpos($attr, 'D') === false) ? 'file' : 'folder',
-                            'attr' => $attr,
-                            'size' => intval($regs[2]),
-                            'time' => mktime($his[0], $his[1], $his[2], $im, $regs[5], $regs[7])
-                        )
-                        : array();
-                    break;
-                case 'error':
-                    throw new SambaException($regs[0]);
-            }
-            if ($i) {
-                switch ($i[1]) {
-                    case 'file':
-                    case 'folder':
-                        $info['info'][$i[0]] = $i;
-                        $info[$i[1]][] = $i[0];
-                        break;
-                    case 'disk':
-                    case 'server':
-                    case 'workgroup':
-                        $info[$i[1]][] = $i[0];
-                        break;
-                }
-            }
+        try {
+            $info = $this->parseOutput($output);
+            $this->closeProcessResource($output);
+            return $info;
+        } catch (SambaException $e) {
+            $this->closeProcessResource($output);
+            throw $e;
         }
-        $this->closeProcessResource($output);
+    }
 
-        return $info;
+    /**
+     * @param SambaUrl $url
+     * @return array
+     */
+    protected function createOptions(SambaUrl $url)
+    {
+        $options = array();
+        $options['-O'] = self::SOCKET_OPTIONS;
+        if ($url->getUser()) {
+            $options['-U'] = "{$url->getUser()}%{$url->getPass()}";
+        }
+        if ($url->getDomain()) {
+            $options['-W'] = $url->getDomain();
+        }
+        if (!$url->isDefaultPort()) {
+            $options['-p'] = $url->getPort();
+        }
+        return $options;
     }
 
     # stats
@@ -253,9 +194,9 @@ class SambaClient
                 'size' => 0,
                 'time' => time(),
             );
-        } else {
-            throw new SambaException("url_stat(): list failed for host '{$url->getHost()}'");
         }
+
+        throw new SambaException("url_stat(): list failed for host '{$url->getHost()}'");
     }
 
     /**
@@ -271,12 +212,10 @@ class SambaClient
                 $info = $output['info'][$name];
                 $this->setInfoCache($url, $info);
                 return $info;
-            } else {
-                throw new SambaException("url_stat(): path '{$url->getPath()}' not found");
             }
-        } else {
-            throw new SambaException("url_stat(): dir failed for path '{$url->getPath()}'");
         }
+
+        throw new SambaException("url_stat(): dir failed for path '{$url->getPath()}'");
     }
 
     /**
@@ -338,15 +277,17 @@ class SambaClient
 
     /**
      * @param string $params
-     * @param string $auth
-     * @param string $options
-     * @param string $port
+     * @param array $options
      * @return resource
      */
-    public function getProcessResource($params, $auth, $options, $port)
+    public function getProcessResource($params, array $options)
     {
+        $args = '';
+        foreach ($options as $key => $value) {
+            $args.= ' ' . $key . ' ' . escapeshellarg($value);
+        }
         return popen(
-            self::CLIENT . " -N {$auth} {$options} {$port} {$options} {$params} 2>/dev/null",
+            self::CLIENT . " -N {$args} {$params} 2>/dev/null",
             'r'
         );
     }
@@ -471,5 +412,88 @@ class SambaClient
         if (!$url->isPath()) {
             throw new SambaException($command . ': error - URL should be path');
         }
+    }
+
+    /**
+     * @param resource $output
+     * @return array
+     */
+    protected function parseOutput($output)
+    {
+        $info = array();
+
+        while (($line = fgets($output)) !== false) {
+            $i = array();
+
+            list($tag, $regs) = $this->getTag($line);
+
+            switch ($tag) {
+                case 'skip':
+                    continue;
+                case 'shares':
+                    $mode = 'shares';
+                    break;
+                case 'servers':
+                    $mode = 'servers';
+                    break;
+                case 'workgroups':
+                    $mode = 'workgroups';
+                    break;
+                case 'share':
+                    list($name, $type) = array(
+                        trim(substr($line, 1, 15)),
+                        trim(strtolower(substr($line, 17, 10)))
+                    );
+                    $i = ($type != 'disk' && preg_match('/^(.*) Disk/', $line, $regs))
+                        ? array(trim($regs[1]), 'disk')
+                        : array($name, 'disk');
+                    break;
+                case 'srvorwg':
+                    list ($name, $master) = array(
+                        strtolower(trim(substr($line, 1, 21))),
+                        strtolower(trim(substr($line, 22)))
+                    );
+                    $i = (isset($mode) && $mode == 'servers')
+                        ? array($name, "server")
+                        : array($name, "workgroup", $master);
+                    break;
+                case 'files':
+                    list ($attr, $name) = preg_match("/^(.*)[ ]+([D|A|H|S|R]+)$/", trim($regs[1]), $regs2)
+                        ? array(trim($regs2[2]), trim($regs2[1]))
+                        : array('', trim($regs[1]));
+                    list ($his, $im) = array(
+                        explode(':', $regs[6]),
+                        1 + strpos("JanFebMarAprMayJunJulAugSepOctNovDec", $regs[4]) / 3
+                    );
+                    $i = ($name != '.' && $name != '..')
+                        ? array(
+                            $name,
+                            (strpos($attr, 'D') === false) ? 'file' : 'folder',
+                            'attr' => $attr,
+                            'size' => intval($regs[2]),
+                            'time' => mktime($his[0], $his[1], $his[2], $im, $regs[5], $regs[7])
+                        )
+                        : array();
+                    break;
+                case 'error':
+                    throw new SambaException($regs[0]);
+            }
+            if ($i) {
+                switch ($i[1]) {
+                    case 'file':
+                    case 'folder':
+                        $info['info'][$i[0]] = $i;
+                        $info[$i[1]][] = $i[0];
+                        break;
+                    case 'disk':
+                    case 'server':
+                    case 'workgroup':
+                        $info[$i[1]][] = $i[0];
+                        break;
+                }
+            }
+        }
+
+        return $info;
     }
 }
