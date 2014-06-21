@@ -372,7 +372,12 @@ EOF;
             'catalog-goods_1379058741.xml',
         );
 
-        $this->assertEquals($expectedDir, $wrapper->dir);
+        $dir = array();
+        while (false !== ($line = $wrapper->dir_readdir())) {
+            $dir[] = $line;
+        }
+
+        $this->assertSame($expectedDir, $dir);
     }
 
     /**
