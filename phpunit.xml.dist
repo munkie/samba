@@ -13,11 +13,11 @@
     bootstrap                   = "tests/bootstrap.php" >
 
     <testsuites>
-        <testsuite name="unit">
+        <testsuite name="Unit">
             <directory>tests/Samba/</directory>
             <exclude>tests/Samba/Functional</exclude>
         </testsuite>
-        <testsuite name="functional">
+        <testsuite name="Functional">
             <directory>tests/Samba/Functional</directory>
         </testsuite>
     </testsuites>
