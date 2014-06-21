@@ -11,7 +11,7 @@ class SambaClient
     /**
      * @var array
      */
-    protected $infos = array();
+    protected $infoCache = array();
 
     /**
      * @var array
@@ -239,7 +239,7 @@ class SambaClient
      */
     public function setInfoCache(SambaUrl $url, array $info)
     {
-        return $this->infos[$url->getUrl()] = $info;
+        return $this->infoCache[$url->getUrl()] = $info;
     }
 
     /**
@@ -248,7 +248,11 @@ class SambaClient
      */
     public function getInfoCache(SambaUrl $url)
     {
-        return isset($this->infos[$url->getUrl()]) ? $this->infos[$url->getUrl()] : false;
+        if (isset($this->infoCache[$url->getUrl()])) {
+            return $this->infoCache[$url->getUrl()];
+        } else {
+            return false;
+        }
     }
 
     /**
@@ -257,9 +261,9 @@ class SambaClient
     public function clearInfoCache(SambaUrl $url = null)
     {
         if (null === $url) {
-            $this->infos = array();
-        } elseif (isset($this->infos[$url->getUrl()])) {
-            unset($this->infos[$url->getUrl()]);
+            $this->infoCache = array();
+        } elseif (isset($this->infoCache[$url->getUrl()])) {
+            unset($this->infoCache[$url->getUrl()]);
         }
     }
 
