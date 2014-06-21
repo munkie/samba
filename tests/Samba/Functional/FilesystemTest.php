@@ -116,14 +116,19 @@ class FilesystemTest extends FunctionalTestCase
 
         $this->assertInternalType('resource', $dh);
 
-        $this->assertEquals('second.txt', readdir($dh));
-        $this->assertEquals('sub-dir', readdir($dh));
-        $this->assertEquals('one', readdir($dh));
+        $files = array();
+        while (false !== ($file = readdir($dh))) {
+            $files[] = $file;
+        }
+
+        $expectedFiles = array('one', 'second.txt', 'sub-dir');
+        $this->assertArrayEquals($expectedFiles, $files);
+
         $this->assertFalse(readdir($dh));
 
         rewinddir($dh);
 
-        $this->assertEquals('second.txt', readdir($dh));
+        $this->assertNotFalse(readdir($dh));
 
         closedir($dh);
     }
@@ -138,10 +143,13 @@ class FilesystemTest extends FunctionalTestCase
 
         $this->assertInternalType('resource', $dh);
 
-        $this->assertEquals('second.txt', readdir($dh));
-        $this->assertEquals('sub-dir', readdir($dh));
-        $this->assertEquals('one', readdir($dh));
-        $this->assertFalse(readdir($dh));
+        $files = array();
+        while (false !== ($file = readdir($dh))) {
+            $files[] = $file;
+        }
+
+        $expectedFiles = array('one', 'second.txt', 'sub-dir');
+        $this->assertArrayEquals($expectedFiles, $files);
     }
 
     public function testDirEmpty()

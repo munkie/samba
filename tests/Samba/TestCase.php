@@ -151,4 +151,14 @@ class TestCase extends \PHPUnit_Framework_TestCase
         );
         $this->assertEquals($expectedKeys, array_keys($stat));
     }
+
+    /**
+     * @param array $expected
+     * @param array $actual
+     * @param string $message
+     */
+    protected function assertArrayEquals($expected, $actual, $message = '')
+    {
+        $this->assertEquals($expected, $actual, $message, 0, 10, true);
+    }
 }
