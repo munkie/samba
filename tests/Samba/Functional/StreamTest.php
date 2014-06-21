@@ -78,4 +78,28 @@ class StreamTest extends FunctionalTestCase
 
         $this->assertEquals("Header\nFooter\n", file_get_contents($localPath));
     }
+
+    /**
+     * @dataProvider failedOpenProvider
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage stream_open(): error in URL
+     * @param string $url
+     */
+    public function testFailedOpen($url)
+    {
+        $url = $this->urlSub($url);
+        fopen($url, 'r');
+    }
+
+    /**
+     * @return array
+     */
+    public function failedOpenProvider()
+    {
+        return array(
+            'host' => array('{hostUrl}'),
+            'share' => array('{shareUrl}'),
+            'invalid' => array('smb://'),
+        );
+    }
 }

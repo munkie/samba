@@ -96,6 +96,7 @@ class FunctionalTestCase extends TestCase
             $url,
             array(
                 '{hostname}' => self::$hostname,
+                '{hostUrl}' => self::$hostUrl,
                 '{share}' => self::$share,
                 '{shareUrl}' => self::$shareUrl,
             )
