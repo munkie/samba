@@ -255,14 +255,15 @@ class SambaStreamWrapper
     /**
      * @param string $path_from
      * @param string $path_to
-     * @return array
+     * @return bool
      */
     public function rename($path_from, $path_to)
     {
         $url_from = $this->client()->parseUrl($path_from);
         $url_to = $this->client()->parseUrl($path_to);
 
-        return $this->client()->rename($url_from, $url_to);
+        $this->client()->rename($url_from, $url_to);
+        return true;
     }
 
     /**
@@ -279,7 +280,7 @@ class SambaStreamWrapper
     }
 
     /**
-     * @param $path
+     * @param string $path
      * @return bool
      */
     public function rmdir($path)

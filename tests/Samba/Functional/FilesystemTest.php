@@ -250,4 +250,103 @@ class FilesystemTest extends FunctionalTestCase
     {
         unlink('smb://');
     }
+
+    public function testRename()
+    {
+        mkdir(self::$sharePath . '/old');
+
+        $result = rename(self::$shareUrl . '/old', self::$shareUrl . '/new');
+        $this->assertTrue($result);
+
+        clearstatcache();
+        $this->assertFalse(file_exists(self::$sharePath . '/old'));
+        $this->assertTrue(file_exists(self::$sharePath . '/new'));
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage FROM & TO must be in same server-share-user-pass-domain
+     * @dataProvider renameDiffHostShare
+     * @param string $from
+     * @param string $to
+     */
+    public function testRenameDiffHostShare($from, $to)
+    {
+        $from = $this->urlSub($from);
+        $to = $this->urlSub($to);
+        rename($from, $to);
+    }
+
+    /**
+     * @return array
+     */
+    public function renameDiffHostShare()
+    {
+        return array(
+            'host' => array(
+                '{shareUrl}/new',
+                'smb://host/share/old'
+            ),
+            'share' => array(
+                '{shareUrl}/new',
+                '{hostUrl}/another-share/old'
+            ),
+        );
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage rename: error - URL should be path
+     * @dataProvider renameInvalidUrl
+     * @param string $from
+     * @param string $to
+     */
+    public function testRenameInvalidUrl($from, $to)
+    {
+        $from = $this->urlSub($from);
+        $to = $this->urlSub($to);
+        rename($from, $to);
+    }
+
+    /**
+     * @return array
+     */
+    public function renameInvalidUrl()
+    {
+        return array(
+            'path - share' => array(
+                '{shareUrl}/dir',
+                '{shareUrl}',
+            ),
+            'path - host' => array(
+                '{shareUrl}/dir',
+                '{hostUrl}',
+            ),
+            'path - invalid' => array(
+                '{shareUrl}/dir',
+                'smb://',
+            ),
+            'share - path' => array(
+                '{shareUrl}',
+                '{shareUrl}/dir',
+            ),
+            'host - path' => array(
+                '{hostUrl}',
+                '{shareUrl}/dir',
+            ),
+            'invalid - path' => array(
+                'smb://',
+                '{shareUrl}/dir',
+            ),
+        );
+    }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage NT_STATUS_OBJECT_NAME_NOT_FOUND renaming files \old -> \new
+     */
+    public function testRenameNotFound()
+    {
+        rename(self::$shareUrl . '/old', self::$shareUrl . '/new');
+    }
 }

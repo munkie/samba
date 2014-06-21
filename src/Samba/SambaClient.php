@@ -365,12 +365,12 @@ class SambaClient
      */
     public function rename(SambaUrl $from, SambaUrl $to)
     {
+        $this->checkUrlIsPath($from, 'rename');
+        $this->checkUrlIsPath($to, 'rename');
+
         if (!$from->isFromSameUserShare($to)) {
             throw new SambaException('rename: FROM & TO must be in same server-share-user-pass-domain');
         }
-
-        $this->checkUrlIsPath($from, 'rename');
-        $this->checkUrlIsPath($to, 'rename');
 
         $this->clearInfoCache($from);
         $command = sprintf('rename "%s" "%s"', $from->getPath(), $to->getPath());
