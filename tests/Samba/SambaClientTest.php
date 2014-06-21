@@ -300,4 +300,38 @@ EOF;
         $parsedUrl = $sambaMock->parseUrl($url);
         $sambaMock->mkdir($parsedUrl);
     }
+
+    /**
+     * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage dir failed for path 'to\dir'
+     */
+    public function testFailedPathInfoNotFoundInCommandOutput()
+    {
+        $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
+
+        $urlDir = "smb://user:password@host/base_path/to/dir";
+
+        $parsedUrl = $sambaMock->parseUrl($urlDir);
+
+        $output = <<<EOF
+Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
+  .                                   D        0  Fri Sep 13 11:13:28 2013
+  ..                                  D        0  Thu Sep  5 16:54:33 2013
+  success                             D        0  Thu Oct  3 12:42:46 2013
+  test                                A        2  Fri Jun 28 21:13:51 2013
+  error                               D        0  Wed Sep 11 18:53:11 2013
+  tmp                                 D        0  Thu Oct  3 12:42:46 2013
+  source                              D        0  Thu Oct  3 12:42:46 2013
+
+                37382 blocks of size 524288. 29328 blocks available
+EOF;
+        $outputStream = $this->convertStringToResource($output);
+
+        $sambaMock
+            ->expects($this->once())
+            ->method('getProcessResource')
+            ->will($this->returnValue($outputStream));
+
+        $sambaMock->info($parsedUrl);
+    }
 }

@@ -6,7 +6,6 @@ class SambaClient
 {
     const SOCKET_OPTIONS = "TCP_NODELAY IPTOS_LOWDELAY SO_KEEPALIVE SO_RCVBUF=8192 SO_SNDBUF=8192";
     const CLIENT = "smbclient";
-    const VERSION = "0.8";
 
     /**
      * @var array
