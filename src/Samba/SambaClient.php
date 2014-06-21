@@ -11,11 +11,6 @@ class SambaClient
     /**
      * @var array
      */
-    protected $infoCache = array();
-
-    /**
-     * @var array
-     */
     protected $regexp = array(
         '^added interface ip=(.*) bcast=(.*) nmask=(.*)$' => 'skip',
         'Anonymous login successful' => 'skip',
@@ -148,10 +143,6 @@ class SambaClient
      */
     public function info(SambaUrl $url)
     {
-        if ($info = $this->getInfoCache($url)) {
-            return $info;
-        }
-
         switch ($url->getType()) {
             case SambaUrl::TYPE_HOST:
                 $info = $this->hostInfo($url);
@@ -197,9 +188,7 @@ class SambaClient
         if ($output = $this->dir($url)) {
             $name = $url->getLastPath();
             if (isset($output['info'][$name])) {
-                $info = $output['info'][$name];
-                $this->setInfoCache($url, $info);
-                return $info;
+                return $output['info'][$name];
             }
         }
 
@@ -230,41 +219,6 @@ class SambaClient
         throw new SambaException(
             "url_stat(): disk resource '{$lowerShare}' not found in '{$url->getHost()}'"
         );
-    }
-
-    /**
-     * @param $url
-     * @param $info
-     * @return array
-     */
-    public function setInfoCache(SambaUrl $url, array $info)
-    {
-        return $this->infoCache[$url->getUrl()] = $info;
-    }
-
-    /**
-     * @param SambaUrl $url
-     * @return bool
-     */
-    public function getInfoCache(SambaUrl $url)
-    {
-        if (isset($this->infoCache[$url->getUrl()])) {
-            return $this->infoCache[$url->getUrl()];
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * @param SambaUrl $url
-     */
-    public function clearInfoCache(SambaUrl $url = null)
-    {
-        if (null === $url) {
-            $this->infoCache = array();
-        } elseif (isset($this->infoCache[$url->getUrl()])) {
-            unset($this->infoCache[$url->getUrl()]);
-        }
     }
 
     /**
@@ -314,7 +268,6 @@ class SambaClient
      */
     public function put(SambaUrl $url, $file)
     {
-        $this->clearInfoCache($url);
         $command = sprintf('put "%s" "%s"', $file, $url->getPath());
         return $this->execute($command, $url);
     }
@@ -327,15 +280,7 @@ class SambaClient
     public function dir(SambaUrl $url, $mask = '')
     {
         $command = sprintf('dir "%s%s"', $url->getPath(), $mask);
-        $result = $this->execute($command, $url);
-
-        if (isset($result['info'])) {
-            foreach ($result['info'] as $name => $info) {
-                $this->setInfoCache($url->getChildUrl($name), $info);
-            }
-        }
-
-        return $result;
+        return $this->execute($command, $url);
     }
 
     /**
@@ -345,7 +290,6 @@ class SambaClient
     public function del(SambaUrl $url)
     {
         $this->checkUrlIsPath($url, 'del');
-        $this->clearInfoCache($url);
         $command = sprintf('del "%s"', $url->getPath());
         return $this->execute($command, $url);
     }
@@ -364,7 +308,6 @@ class SambaClient
             throw new SambaException('rename: FROM & TO must be in same server-share-user-pass-domain');
         }
 
-        $this->clearInfoCache($from);
         $command = sprintf('rename "%s" "%s"', $from->getPath(), $to->getPath());
         return $this->execute($command, $to);
     }
@@ -376,7 +319,6 @@ class SambaClient
     public function mkdir(SambaUrl $url)
     {
         $this->checkUrlIsPath($url, 'mkdir');
-        $this->clearInfoCache($url);
         $command = sprintf('mkdir "%s"', $url->getPath());
         return $this->execute($command, $url);
     }
@@ -389,7 +331,6 @@ class SambaClient
     {
         $this->checkUrlIsPath($url, 'rmdir');
 
-        $this->clearInfoCache($url);
         $command = sprintf('rmdir "%s"', $url->getPath());
         return $this->execute($command, $url);
     }

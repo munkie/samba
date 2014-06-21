@@ -227,6 +227,7 @@ EOF;
 
     /**
      * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage tree connect failed: test
      */
     public function testRequestError()
     {
@@ -249,6 +250,7 @@ EOF;
 
     /**
      * @expectedException \Samba\SambaException
+     * @expectedExceptionMessage Connection to faro.lighthouse.pro failed (Error NT_STATUS_BAD_NETWORK_NAME)
      */
     public function testBadNetworkNameError()
     {
@@ -267,88 +269,6 @@ EOF;
         $parsedUrlDir = $sambaMock->parseUrl($urlDir);
 
         $sambaMock->dir($parsedUrlDir);
-    }
-
-    public function testStatCacheClear()
-    {
-        $urlFile = 'smb://user:password@host/base_path/to/dir/file.doc';
-        $urlDir = 'smb://user:password@host/base_path/to/dir';
-
-        $sambaMock = $this->getSambaClientMock(array('execute'));
-
-        $parsedUrlFile = $sambaMock->parseUrl($urlFile);
-        $parsedUrlDir = $sambaMock->parseUrl($urlDir);
-
-        $infoFile = array(
-            'attr' => 'F',
-            'size' => 4,
-            'time' => 777,
-        );
-
-        $infoDir = array(
-            'attr' => 'D',
-            'size' => 4,
-            'time' => 777,
-        );
-
-        $this->assertEquals($infoFile, $sambaMock->setInfoCache($parsedUrlFile, $infoFile));
-        $this->assertEquals($infoDir, $sambaMock->setInfoCache($parsedUrlDir, $infoDir));
-
-        $this->assertEquals($infoFile, $sambaMock->getInfoCache($parsedUrlFile));
-        $this->assertEquals($infoDir, $sambaMock->getInfoCache($parsedUrlDir));
-
-        $sambaMock->clearInfoCache($parsedUrlFile);
-
-        $this->assertFalse($sambaMock->getInfoCache($parsedUrlFile));
-        $this->assertEquals($infoDir, $sambaMock->getInfoCache($parsedUrlDir));
-
-        $this->assertEquals($infoFile, $sambaMock->setInfoCache($parsedUrlFile, $infoFile));
-
-        $sambaMock->clearInfoCache();
-
-        $this->assertFalse($sambaMock->getInfoCache($parsedUrlFile));
-        $this->assertFalse($sambaMock->getInfoCache($parsedUrlDir));
-    }
-
-    /**
-     * @dataProvider statCacheProvider
-     * @param string $url
-     * @param string $mode
-     */
-    public function testStatCache($url, $mode)
-    {
-        $sambaMock = $this->getSambaClientMock(array('execute'));
-
-        $parsedUrl = $sambaMock->parseUrl($url);
-
-        $this->assertFalse($sambaMock->getInfoCache($parsedUrl));
-
-        $info = array(
-            'attr' => $mode,
-            'size' => 4,
-            'time' => 777,
-        );
-
-        $this->assertEquals($info, $sambaMock->setInfoCache($parsedUrl, $info));
-
-        $this->assertEquals($info, $sambaMock->getInfoCache($parsedUrl));
-    }
-
-    /**
-     * @return array
-     */
-    public function statCacheProvider()
-    {
-        return array(
-            'dir' => array(
-                'smb://user:password@host/base_path/to/dir',
-                'D',
-            ),
-            'file' => array(
-                'smb://user:password@host/base_path/to/dir/file.doc',
-                'F',
-            ),
-        );
     }
 
     public function testCommandWithDomainAndCustomPort()
