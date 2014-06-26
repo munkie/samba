@@ -5,9 +5,7 @@
         "This file is @generated automatically"
     ],
     "hash": "988365dbb6fb8b16be58d9d9e13386ed",
-    "packages": [
-
-    ],
+    "packages": [],
     "packages-dev": [
         {
             "name": "codeclimate/php-test-reporter",
@@ -694,18 +692,18 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/satooshi/php-coveralls.git",
-                "reference": "d05254e48ac5031a16418f42b11ccb0fc6daacd2"
+                "reference": "cad73f9122027d15a43968f862cf2958e2ac5f7a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/satooshi/php-coveralls/zipball/d05254e48ac5031a16418f42b11ccb0fc6daacd2",
-                "reference": "d05254e48ac5031a16418f42b11ccb0fc6daacd2",
+                "url": "https://api.github.com/repos/satooshi/php-coveralls/zipball/cad73f9122027d15a43968f862cf2958e2ac5f7a",
+                "reference": "cad73f9122027d15a43968f862cf2958e2ac5f7a",
                 "shasum": ""
             },
             "require": {
                 "ext-json": "*",
                 "ext-simplexml": "*",
-                "guzzle/guzzle": ">=3.0",
+                "guzzle/guzzle": ">=2.7",
                 "php": ">=5.3",
                 "psr/log": "1.0.0",
                 "symfony/config": ">=2.0",
@@ -715,7 +713,7 @@
             },
             "require-dev": {
                 "apigen/apigen": "2.8.*@stable",
-                "pdepend/pdepend": "dev-master",
+                "pdepend/pdepend": "dev-master as 2.0.0",
                 "phpmd/phpmd": "dev-master",
                 "phpunit/php-invoker": ">=1.1.0,<1.2.0",
                 "phpunit/phpunit": "3.7.*@stable",
@@ -761,7 +759,7 @@
                 "github",
                 "test"
             ],
-            "time": "2014-06-12 15:19:16"
+            "time": "2014-06-24 23:45:40"
         },
         {
             "name": "sebastian/comparator",
@@ -1345,18 +1343,12 @@
             "time": "2014-05-16 14:25:18"
         }
     ],
-    "aliases": [
-
-    ],
+    "aliases": [],
     "minimum-stability": "stable",
     "stability-flags": {
         "satooshi/php-coveralls": 20,
         "codeclimate/php-test-reporter": 20
     },
-    "platform": [
-
-    ],
-    "platform-dev": [
-
-    ]
+    "platform": [],
+    "platform-dev": []
 }
