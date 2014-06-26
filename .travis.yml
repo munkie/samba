@@ -16,5 +16,6 @@ script:
 
 after_script:
     - bin/coveralls -v
-    - CODECLIMATE_REPO_TOKEN=eed6d4d4a77cdb425447e7d120f99c96f8a290ef0d9a7a916f4757ffb8628ded bin/test-reporter --stdout > codeclimate.json
-    - "curl -X POST -d @codeclimate.json -H 'Content-Type: application/json' -H 'User-Agent: Code Climate (PHP Test Reporter v1.0.1-dev)' https://codeclimate.com/test_reports"
+    #- CODECLIMATE_REPO_TOKEN=eed6d4d4a77cdb425447e7d120f99c96f8a290ef0d9a7a916f4757ffb8628ded bin/test-reporter --stdout > codeclimate.json
+    #- "curl -X POST -d @codeclimate.json -H 'Content-Type: application/json' -H 'User-Agent: Code Climate (PHP Test Reporter v1.0.1-dev)' https://codeclimate.com/test_reports"
+    - CODECLIMATE_REPO_TOKEN=eed6d4d4a77cdb425447e7d120f99c96f8a290ef0d9a7a916f4757ffb8628ded bin/test-reporter

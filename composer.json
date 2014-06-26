@@ -30,6 +30,6 @@
         "phpunit/phpunit": "~4.0",
         "symfony/filesystem": "~2.3",
         "satooshi/php-coveralls": "dev-master",
-        "codeclimate/php-test-reporter": "dev-master"
+        "codeclimate/php-test-reporter": "dev-pb-upgrade-guzzle"
     }
 }
