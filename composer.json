@@ -26,10 +26,16 @@
     "config": {
         "bin-dir": "bin"
     },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/codeclimate/php-test-reporter"
+        }
+    ],    
     "require-dev": {
         "phpunit/phpunit": "~4.0",
         "symfony/filesystem": "~2.3",
         "satooshi/php-coveralls": "dev-master",
-        "codeclimate/php-test-reporter": "dev-pb-upgrade-guzzle"
+        "codeclimate/php-test-reporter": "dev-pb-system-cert"
     }
 }
