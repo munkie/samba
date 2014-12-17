@@ -1,5 +1,5 @@
 {
-    "name": "crystalservice/samba",
+    "name": "munkie/samba",
     "description": "PHP samba stream wrapper",
     "license": "MIT",
     "authors": [
