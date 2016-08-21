@@ -168,7 +168,7 @@ class SambaStreamWrapperTest extends TestCase
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoHost = $wrapper->url_stat($urlHost);
 
-        $this->assertEquals($expectedStatInfoHost, $actualStatInfoHost);
+        static::assertEquals($expectedStatInfoHost, $actualStatInfoHost);
     }
 
     public function testUrlStatDir()
@@ -187,7 +187,7 @@ class SambaStreamWrapperTest extends TestCase
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoDir = $wrapper->url_stat($urlDir);
 
-        $this->assertEquals($expectedStatInfoDir, $actualStatInfoDir);
+        static::assertEquals($expectedStatInfoDir, $actualStatInfoDir);
     }
 
     public function testUrlStatFile()
@@ -206,7 +206,7 @@ class SambaStreamWrapperTest extends TestCase
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoFile = $wrapper->url_stat($urlFile);
 
-        $this->assertEquals($expectedStatInfoFile, $actualStatInfoFile);
+        static::assertEquals($expectedStatInfoFile, $actualStatInfoFile);
     }
 
     public function testUrlStatShare()
@@ -231,7 +231,7 @@ class SambaStreamWrapperTest extends TestCase
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoShare = $wrapper->url_stat($urlShare);
 
-        $this->assertEquals($expectedStatInfoShare, $actualStatInfoShare);
+        static::assertEquals($expectedStatInfoShare, $actualStatInfoShare);
     }
 
     /**
@@ -343,8 +343,8 @@ EOF;
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->dir_opendir($urlHost, 0);
 
-        $this->assertEquals('centrum', $wrapper->dir_readdir());
-        $this->assertFalse($wrapper->dir_readdir());
+        static::assertSame('centrum', $wrapper->dir_readdir());
+        static::assertFalse($wrapper->dir_readdir());
     }
 
     public function testDirOpenDir()
@@ -377,7 +377,7 @@ EOF;
             $dir[] = $line;
         }
 
-        $this->assertSame($expectedDir, $dir);
+        static::assertSame($expectedDir, $dir);
     }
 
     /**
@@ -441,15 +441,15 @@ EOF;
      */
     public function testWrapperRegister()
     {
-        $this->assertFalse(SambaStreamWrapper::is_registered());
+        static::assertFalse(SambaStreamWrapper::is_registered());
 
         SambaStreamWrapper::register();
 
-        $this->assertTrue(SambaStreamWrapper::is_registered());
+        static::assertTrue(SambaStreamWrapper::is_registered());
 
         SambaStreamWrapper::unregister();
 
-        $this->assertFalse(SambaStreamWrapper::is_registered());
+        static::assertFalse(SambaStreamWrapper::is_registered());
     }
 
     /**

@@ -178,7 +178,7 @@ class SambaClientTest extends TestCase
         $parsedUrlFile = $sambaMock->parseUrl($urlFile);
 
         $lookInfo = $sambaMock->client('-L test.host', $parsedUrlFile);
-        $this->assertEquals($expectedLookInfo, $lookInfo);
+        static::assertEquals($expectedLookInfo, $lookInfo);
     }
 
     public function testDirRequest()

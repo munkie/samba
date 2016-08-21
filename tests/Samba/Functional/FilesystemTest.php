@@ -8,11 +8,12 @@ class FilesystemTest extends FunctionalTestCase
     {
         $url = self::$shareUrl . '/test-dir';
         $result = mkdir($url);
-        $this->assertTrue($result);
+        static::assertTrue($result);
 
         $localPath = self::$sharePath . '/test-dir';
-        $this->assertTrue(file_exists($localPath));
-        $this->assertTrue(is_dir($localPath));
+
+        static::assertFileExists($localPath);
+        static::assertIsDir($localPath);
     }
 
     public function testRmDir()
@@ -20,14 +21,14 @@ class FilesystemTest extends FunctionalTestCase
         $localPath = self::$sharePath . '/test-dir';
         mkdir($localPath);
 
-        $this->assertTrue(file_exists($localPath));
-        $this->assertTrue(is_dir($localPath));
+        static::assertFileExists($localPath);
+        static::assertIsDir($localPath);
 
         $url = self::$shareUrl . '/test-dir';
         $result = rmdir($url);
-        $this->assertTrue($result);
-        $this->assertFalse(file_exists($localPath));
-        $this->assertFalse(file_exists($url));
+        static::assertTrue($result);
+        static::assertFileNotExists($localPath);
+        static::assertFileNotExists($url);
     }
 
     /**
@@ -40,7 +41,7 @@ class FilesystemTest extends FunctionalTestCase
     {
         $url = $this->urlSub($url);
 
-        $this->assertFalse(file_exists($url));
+        static::assertFileNotExists($url);
         stat($url);
     }
 
@@ -72,9 +73,9 @@ class FilesystemTest extends FunctionalTestCase
         $url = self::$shareUrl . '/' . $path;
 
         $smbStat = stat($url);
-        $this->assertInternalType('array', $smbStat);
-        $this->assertArrayHasKey('mtime', $smbStat);
-        $this->assertEquals(1403344333, $smbStat['mtime']);
+        static::assertInternalType('array', $smbStat);
+        static::assertArrayHasKey('mtime', $smbStat);
+        static::assertSame(1403344333, $smbStat['mtime']);
     }
 
     /**
@@ -94,13 +95,13 @@ class FilesystemTest extends FunctionalTestCase
     public function testHostStat()
     {
         $stat = stat(self::$hostUrl);
-        $this->assertStat($stat);
+        static::assertStat($stat);
     }
 
     public function testShareStat()
     {
         $stat = stat(self::$shareUrl);
-        $this->assertStat($stat);
+        static::assertStat($stat);
     }
 
     public function testDir()
@@ -114,7 +115,7 @@ class FilesystemTest extends FunctionalTestCase
 
         $dh = opendir(self::$shareUrl . '/dir-test');
 
-        $this->assertInternalType('resource', $dh);
+        static::assertResource($dh);
 
         $files = array();
         while (false !== ($file = readdir($dh))) {
@@ -122,13 +123,13 @@ class FilesystemTest extends FunctionalTestCase
         }
 
         $expectedFiles = array('one', 'second.txt', 'sub-dir');
-        $this->assertArrayEquals($expectedFiles, $files);
+        static::assertArrayEquals($expectedFiles, $files);
 
-        $this->assertFalse(readdir($dh));
+        static::assertFalse(readdir($dh));
 
         rewinddir($dh);
 
-        $this->assertNotFalse(readdir($dh));
+        static::assertNotFalse(readdir($dh));
 
         closedir($dh);
     }
@@ -141,7 +142,7 @@ class FilesystemTest extends FunctionalTestCase
 
         $dh = opendir(self::$shareUrl);
 
-        $this->assertInternalType('resource', $dh);
+        static::assertResource($dh);
 
         $files = array();
         while (false !== ($file = readdir($dh))) {
@@ -149,16 +150,16 @@ class FilesystemTest extends FunctionalTestCase
         }
 
         $expectedFiles = array('one', 'second.txt', 'sub-dir');
-        $this->assertArrayEquals($expectedFiles, $files);
+        static::assertArrayEquals($expectedFiles, $files);
     }
 
     public function testDirEmpty()
     {
         $dh = opendir(self::$shareUrl);
 
-        $this->assertInternalType('resource', $dh);
+        static::assertResource($dh);
 
-        $this->assertFalse(readdir($dh));
+        static::assertFalse(readdir($dh));
     }
 
     public function testDirHost()
@@ -169,7 +170,7 @@ class FilesystemTest extends FunctionalTestCase
             $files[] = $file;
         }
 
-        $this->assertContains(self::$share, $files);
+        static::assertContains(self::$share, $files);
     }
 
     /**
@@ -196,15 +197,15 @@ class FilesystemTest extends FunctionalTestCase
 
         $fileUrl = self::$shareUrl . '/test-file.txt';
 
-        $this->assertTrue(file_exists($fileUrl));
-        $this->assertTrue(is_file($fileUrl));
-        $this->assertFalse(is_dir($fileUrl));
+        static::assertFileExists($fileUrl);
+        static::assertIsFile($fileUrl);
+        static::assertNotDir($fileUrl);
 
         $result = unlink($fileUrl);
-        $this->assertTrue($result);
+        static::assertTrue($result);
 
         clearstatcache();
-        $this->assertFalse(file_exists($fileUrl));
+        static::assertFileNotExists($fileUrl);
     }
 
     /**
@@ -217,9 +218,9 @@ class FilesystemTest extends FunctionalTestCase
 
         $dirUrl = self::$shareUrl . '/test-dir';
 
-        $this->assertTrue(file_exists($dirUrl));
-        $this->assertFalse(is_file($dirUrl));
-        $this->assertTrue(is_dir($dirUrl));
+        static::assertFileExists($dirUrl);
+        static::assertNotFile($dirUrl);
+        static::assertIsDir($dirUrl);
 
         unlink($dirUrl);
     }
@@ -256,11 +257,11 @@ class FilesystemTest extends FunctionalTestCase
         mkdir(self::$sharePath . '/old');
 
         $result = rename(self::$shareUrl . '/old', self::$shareUrl . '/new');
-        $this->assertTrue($result);
+        static::assertTrue($result);
 
         clearstatcache();
-        $this->assertFalse(file_exists(self::$sharePath . '/old'));
-        $this->assertTrue(file_exists(self::$sharePath . '/new'));
+        static::assertFileNotExists(self::$sharePath . '/old');
+        static::assertFileExists(self::$sharePath . '/new');
     }
 
     /**

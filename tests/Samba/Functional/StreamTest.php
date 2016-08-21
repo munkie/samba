@@ -14,26 +14,26 @@ class StreamTest extends FunctionalTestCase
     public function testWrite()
     {
         $fh = fopen(self::$shareUrl . '/file.nfo', 'w');
-        $this->assertInternalType('resource', $fh);
+        static::assertResource($fh);
 
         $result = fwrite($fh, 'test');
-        $this->assertEquals(4, $result);
+        static::assertSame(4, $result);
 
         $result = fclose($fh);
-        $this->assertTrue($result);
+        static::assertTrue($result);
 
         clearstatcache();
 
         $localPath = self::$sharePath . '/file.nfo';
-        $this->assertTrue(file_exists($localPath));
-        $this->assertEquals('test', file_get_contents($localPath));
+        static::assertFileExists($localPath);
+        static::assertFileEquals('test', $localPath);
     }
 
     public function testGets()
     {
         $fh = fopen(self::$shareUrl . '/LICENSE', 'r');
 
-        $this->assertEquals("The MIT License (MIT)\n", fgets($fh));
+        static::assertSame("The MIT License (MIT)\n", fgets($fh));
     }
 
     public function testSeek()
@@ -41,27 +41,27 @@ class StreamTest extends FunctionalTestCase
         $fh = fopen(self::$shareUrl . '/LICENSE', 'r');
 
         $result = fseek($fh, 4);
-        $this->assertSame(0, $result);
+        static::assertSame(0, $result);
 
-        $this->assertEquals("MIT License (MIT)\n", fgets($fh));
+        static::assertSame("MIT License (MIT)\n", fgets($fh));
     }
 
     public function testFailedSeek()
     {
         $fh = fopen(self::$shareUrl . '/LICENSE', 'r');
         $result = fseek($fh, -1);
-        $this->assertSame(-1, $result);
+        static::assertSame(-1, $result);
     }
 
     public function testTell()
     {
         $fh = fopen(self::$shareUrl . '/LICENSE', 'r');
 
-        $this->assertSame(0, ftell($fh));
+        static::assertSame(0, ftell($fh));
 
         fseek($fh, 10);
 
-        $this->assertSame(10, ftell($fh));
+        static::assertSame(10, ftell($fh));
     }
 
     public function testFlushOnDestruct()
@@ -72,11 +72,11 @@ class StreamTest extends FunctionalTestCase
         $fh = fopen(self::$shareUrl . '/write.txt', 'a+');
         fwrite($fh, "Footer\n");
 
-        $this->assertEquals("Header\n", file_get_contents($localPath));
+        static::assertFileEquals("Header\n", $localPath);
 
         unset($fh);
 
-        $this->assertEquals("Header\nFooter\n", file_get_contents($localPath));
+        static::assertFileEquals("Header\nFooter\n", $localPath);
     }
 
     /**
@@ -108,7 +108,7 @@ class StreamTest extends FunctionalTestCase
         $fh = fopen(self::$shareUrl . '/LICENSE', 'r');
 
         $stat = fstat($fh);
-        $this->assertStat($stat);
-        $this->assertEquals(1066, $stat['size']);
+        static::assertStat($stat);
+        static::assertSame(1066, $stat['size']);
     }
 }
