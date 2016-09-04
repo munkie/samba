@@ -2,6 +2,7 @@
     "name": "munkie/samba",
     "description": "PHP samba stream wrapper",
     "license": "MIT",
+    "abandoned": "icewind/smb",
     "authors": [
         {
             "name": "Victor M Varela"
