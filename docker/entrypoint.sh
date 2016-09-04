@@ -3,7 +3,11 @@
 set -e
 
 service smbd start
-testparm -s
+#testparm -s Uncomment to check samba configuration
 
-composer install
-exec "$@"
+[ -f composer.json ] && gosu samba composer install
+
+export USER=samba
+export HOME=/home/samba
+
+exec gosu samba "$@"
