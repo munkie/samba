@@ -27,7 +27,7 @@ class SambaClientTest extends TestCase
 
         $url = new SambaUrl($url);
 
-        $this->assertEquals($expectedParsedUrl, $url->toArray());
+        static::assertEquals($expectedParsedUrl, $url->toArray());
     }
 
     /**
@@ -112,9 +112,9 @@ class SambaClientTest extends TestCase
         $parsedUrl = $sambaMock->parseUrl($url);
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('client')
-            ->with($this->equalTo("-L 'host'"), $this->equalTo($parsedUrl));
+            ->with("-L 'host'", $parsedUrl);
 
         $sambaMock->look($parsedUrl);
     }
@@ -130,9 +130,9 @@ class SambaClientTest extends TestCase
         $expectedClientParams = "-d 0 '//host/base_path' -c 'test_command'";
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('client')
-            ->with($this->equalTo($expectedClientParams), $this->equalTo($parsedUrl));
+            ->with($expectedClientParams, $parsedUrl);
 
         $sambaMock->execute('test_command', $parsedUrl);
     }
@@ -163,9 +163,9 @@ class SambaClientTest extends TestCase
         );
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('getProcessResource')
-            ->will($this->returnValue($commandOutputStream));
+            ->willReturn($commandOutputStream);
 
         $expectedLookInfo = array(
             'disk' => array('centrum'),
@@ -178,15 +178,11 @@ class SambaClientTest extends TestCase
         $parsedUrlFile = $sambaMock->parseUrl($urlFile);
 
         $lookInfo = $sambaMock->client('-L test.host', $parsedUrlFile);
-        $this->assertEquals($expectedLookInfo, $lookInfo);
+        static::assertEquals($expectedLookInfo, $lookInfo);
     }
 
     public function testDirRequest()
     {
-        // workaround for expected dates which are parsed with moscow timezone
-        $previousTZ = date_default_timezone_get();
-        date_default_timezone_set('Europe/Moscow');
-
         $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
         $urlDir = "smb://user:password@host/base_path/to/dir";
@@ -212,17 +208,113 @@ EOF;
         $openDirInfoStream = $this->convertStringToResource($openDirInfo);
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('getProcessResource')
-            ->will($this->returnValue($openDirInfoStream));
+            ->willReturn($openDirInfoStream);
 
         $dirInfo = $sambaMock->dir($parsedUrlDir, '\*');
 
         $expectedDirInfo = $this->getExpectedDirInfo();
 
-        $this->assertEquals($expectedDirInfo, $dirInfo);
+        static::assertEquals($expectedDirInfo, $dirInfo);
+    }
 
-        date_default_timezone_set($previousTZ);
+    /**
+     * @dataProvider dirInfoProvider
+     *
+     * @param string $openDirInfo
+     * @param array $expectedDirInfo
+     */
+    public function testDirRequestDifferentFileTypes($openDirInfo, array $expectedDirInfo)
+    {
+        $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
+
+        $urlDir = "smb://user:password@host/base_path/to/dir";
+
+        $parsedUrlDir = $sambaMock->parseUrl($urlDir);
+
+        $openDirInfoStream = $this->convertStringToResource($openDirInfo);
+
+        $sambaMock
+            ->expects(static::once())
+            ->method('getProcessResource')
+            ->willReturn($openDirInfoStream);
+
+        $dirInfo = $sambaMock->dir($parsedUrlDir, '\*');
+
+        static::assertEquals($expectedDirInfo, $dirInfo['info']);
+    }
+
+    /**
+     * @return array
+     */
+    public static function dirInfoProvider()
+    {
+        return array(
+            'D' => array(
+                'dirInfo' => <<<EOF
+Anonymous login successful
+Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
+  .                                   D        0  Fri Sep 13 11:13:28 2013
+  ..                                  D        0  Thu Sep  5 16:54:33 2013
+  success                             D        0  Thu Oct  3 12:42:46 2013
+
+                37382 blocks of size 524288. 29328 blocks available
+EOF
+                ,
+                'expected' => array(
+                    'success' => array(
+                        'success',
+                        'folder',
+                        'attr' => 'D',
+                        'size' => 0,
+                        'time' => 1380804166,
+                    ),
+                ),
+            ),
+            'V' => array(
+                'dirInfo' => <<<EOF
+Anonymous login successful
+Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
+  .                                   D        0  Fri Sep 13 11:13:28 2013
+  ..                                  D        0  Thu Sep  5 16:54:33 2013
+  volume                              V        0  Thu Oct  3 12:42:46 2013
+
+                37382 blocks of size 524288. 29328 blocks available
+EOF
+            ,
+                'expected' => array(
+                    'volume' => array(
+                        'volume',
+                        'file',
+                        'attr' => 'V',
+                        'size' => 0,
+                        'time' => 1380804166,
+                    ),
+                ),
+            ),
+            'A' => array(
+                'dirInfo' => <<<EOF
+Anonymous login successful
+Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
+  .                                   D        0   Fri Sep 13 11:13:28 2013
+  ..                                  D        0   Thu Sep  5 16:54:33 2013
+  archive                             A        70  Thu Oct  3 12:42:46 2013
+
+                37382 blocks of size 524288. 29328 blocks available
+EOF
+            ,
+                'expected' => array(
+                    'archive' => array(
+                        'archive',
+                        'file',
+                        'attr' => 'A',
+                        'size' => 70,
+                        'time' => 1380804166,
+                    ),
+                ),
+            ),
+        );
     }
 
     /**
@@ -236,9 +328,9 @@ EOF;
         $errorResponseStream = $this->convertStringToResource('tree connect failed: test');
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('getProcessResource')
-            ->will($this->returnValue($errorResponseStream));
+            ->willReturn($errorResponseStream);
 
         $urlDir = 'smb://user:password@host/base_path/to/dir';
 
@@ -262,9 +354,9 @@ EOF;
             "Connection to faro.lighthouse.pro failed (Error NT_STATUS_BAD_NETWORK_NAME)\n"
         );
         $sambaMock
-            ->expects($this->any())
+            ->expects(static::once())
             ->method('getProcessResource')
-            ->will($this->returnValue($expectedResponseStream));
+            ->willReturn($expectedResponseStream);
 
         $parsedUrlDir = $sambaMock->parseUrl($urlDir);
 
@@ -286,13 +378,10 @@ EOF;
         $outputStream = $this->convertStringToResource('');
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('getProcessResource')
-            ->with(
-                $this->equalTo($expectedParams),
-                $this->equalTo($expectedOptions)
-            )
-            ->will($this->returnValue($outputStream))
+            ->with($expectedParams, $expectedOptions)
+            ->willReturn($outputStream)
         ;
 
         $url = 'smb://domain.local;user:password@hostname:777/share/dir';
@@ -328,9 +417,9 @@ EOF;
         $outputStream = $this->convertStringToResource($output);
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('getProcessResource')
-            ->will($this->returnValue($outputStream));
+            ->willReturn($outputStream);
 
         $sambaMock->info($parsedUrl);
     }

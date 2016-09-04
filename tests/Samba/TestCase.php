@@ -39,56 +39,56 @@ class TestCase extends \PHPUnit_Framework_TestCase
                     'folder',
                     'attr' => 'D',
                     'size' => 0,
-                    'time' => 1380789766,
+                    'time' => 1380804166,
                 ),
                 'test' => array(
                     'test',
                     'file',
                     'attr' => 'A',
                     'size' => 2,
-                    'time' => 1372439631,
+                    'time' => 1372454031,
                 ),
                 'error' => array(
                     'error',
                     'folder',
                     'attr' => 'D',
                     'size' => 0,
-                    'time' => 1378911191,
+                    'time' => 1378925591,
                 ),
                 'tmp' => array(
                     'tmp',
                     'folder',
                     'attr' => 'D',
                     'size' => 0,
-                    'time' => 1380789766,
+                    'time' => 1380804166,
                 ),
                 'source' => array(
                     'source',
                     'folder',
                     'attr' => 'D',
                     'size' => 0,
-                    'time' => 1380789766,
+                    'time' => 1380804166,
                 ),
                 'catalog-goods_1234-13-09-2013_11-30-14.xml' => array(
                     'catalog-goods_1234-13-09-2013_11-30-14.xml',
                     'file',
                     'attr' => 'A',
                     'size' => 1120,
-                    'time' => 1379057353,
+                    'time' => 1379071753,
                 ),
                 'catalog-goods_1378998029.xml' => array(
                     'catalog-goods_1378998029.xml',
                     'file',
                     'attr' => 'A',
                     'size' => 70,
-                    'time' => 1378998030,
+                    'time' => 1379012430,
                 ),
                 'catalog-goods_1379058741.xml' => array(
                     'catalog-goods_1379058741.xml',
                     'file',
                     'attr' => 'A',
                     'size' => 3917,
-                    'time' => 1379058742,
+                    'time' => 1379073142,
                 ),
             ),
             'folder' => array(
@@ -129,7 +129,7 @@ class TestCase extends \PHPUnit_Framework_TestCase
     /**
      * @param array $stat
      */
-    protected function assertStat(array $stat)
+    public static function assertStat(array $stat)
     {
         $expectedKeys = array_merge(
             range(0, 12),
@@ -149,16 +149,72 @@ class TestCase extends \PHPUnit_Framework_TestCase
                 'blocks',
             )
         );
-        $this->assertEquals($expectedKeys, array_keys($stat));
+        static::assertEquals($expectedKeys, array_keys($stat));
     }
 
     /**
-     * @param array $expected
-     * @param array $actual
+     * Assert array with canonicalize option on
+     *
+     * @param array $expected Expected array
+     * @param array $actual Actual array
+     * @param string $message Error message
+     */
+    public function assertArrayEquals($expected, $actual, $message = '')
+    {
+        static::assertEquals($expected, $actual, $message, 0.0, 10, true);
+    }
+
+    /**
+     * Assert file path is directory
+     *
+     * @param string $filePath
      * @param string $message
      */
-    protected function assertArrayEquals($expected, $actual, $message = '')
+    public static function assertIsDir($filePath, $message = '')
     {
-        $this->assertEquals($expected, $actual, $message, 0, 10, true);
+        static::assertTrue(is_dir($filePath), $message);
+    }
+
+    /**
+     * Assert file path is not directory
+     *
+     * @param string $filePath
+     * @param string $message
+     */
+    public static function assertNotDir($filePath, $message = '')
+    {
+        static::assertFalse(is_dir($filePath), $message);
+    }
+
+    /**
+     * Assert file path is file
+     *
+     * @param string $filePath
+     * @param string $message
+     */
+    public static function assertIsFile($filePath, $message = '')
+    {
+        static::assertTrue(is_file($filePath), $message);
+    }
+
+    /**
+     * Assert file path is not file
+     *
+     * @param string $filePath
+     * @param string $message
+     */
+    public static function assertNotFile($filePath, $message = '')
+    {
+        static::assertFalse(is_file($filePath), $message);
+    }
+
+    /**
+     *
+     * @param string $value
+     * @param string $message
+     */
+    public static function assertResource($value, $message = '')
+    {
+        static::assertInternalType('resource', $value, $message);
     }
 }
