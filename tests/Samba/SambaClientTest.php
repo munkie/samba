@@ -245,6 +245,9 @@ EOF;
         static::assertEquals($expectedDirInfo, $dirInfo['info']);
     }
 
+    /**
+     * @return array
+     */
     public static function dirInfoProvider()
     {
         return array(
@@ -351,7 +354,7 @@ EOF
             "Connection to faro.lighthouse.pro failed (Error NT_STATUS_BAD_NETWORK_NAME)\n"
         );
         $sambaMock
-            ->expects(static::any())
+            ->expects(static::once())
             ->method('getProcessResource')
             ->willReturn($expectedResponseStream);
 

@@ -3,7 +3,9 @@ FROM php:5.6
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
             smbclient \
-            samba
+            samba \
+            zlib1g-dev \
+            git
 
 # grab gosu for easy step-down from root
 ENV GOSU_VERSION 1.7
@@ -17,11 +19,12 @@ RUN set -x \
 	&& chmod +x /usr/local/bin/gosu \
 	&& gosu nobody true
 
+RUN docker-php-ext-install zip
 RUN pecl install xdebug && docker-php-ext-enable xdebug
 
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin/ --filename=composer
 
-RUN useradd --shell /bin/bash -m samba
+RUN useradd --shell /bin/bash -u 1000 -g 1000 -m samba
 RUN echo 'password' | tee - | smbpasswd -a -s samba
 RUN mkdir -p /home/samba/samba-test
 RUN chown -R samba:samba /home/samba/samba-test

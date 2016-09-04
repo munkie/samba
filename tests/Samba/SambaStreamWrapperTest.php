@@ -159,7 +159,6 @@ class SambaStreamWrapperTest extends TestCase
         );
 
         $sambaMock
-            ->expects($this->any())
             ->method('look')
             ->willReturn($lookInfo);
 
@@ -178,7 +177,6 @@ class SambaStreamWrapperTest extends TestCase
         $sambaMock = $this->getSambaClientMock(array('execute'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('execute')
             ->willReturn($this->getExpectedDirInfo());
 
@@ -197,7 +195,6 @@ class SambaStreamWrapperTest extends TestCase
         $sambaMock = $this->getSambaClientMock(array('execute'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('execute')
             ->willReturn($this->getExpectedDirInfo());
 
@@ -222,7 +219,6 @@ class SambaStreamWrapperTest extends TestCase
         $sambaMock = $this->getSambaClientMock(array('look'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('look')
             ->willReturn($shareLookInfo);
 
@@ -261,7 +257,6 @@ class SambaStreamWrapperTest extends TestCase
         $sambaMock = $this->getSambaClientMock(array('look'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('look')
             ->willReturn($shareLookInfo);
 
@@ -305,7 +300,7 @@ class SambaStreamWrapperTest extends TestCase
         $executeOutput =  <<<EOF
 Anonymous login successful
 Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
-NT_STATUS_NO_SUCH_FILE listing \reports
+NT_STATUS_NO_SUCH_FILE listing reports
 EOF;
 
         $executeOutputStream = $this->convertStringToResource($executeOutput);
@@ -313,7 +308,6 @@ EOF;
         $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('getProcessResource')
             ->willReturn($executeOutputStream);
 
