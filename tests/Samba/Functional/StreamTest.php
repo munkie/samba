@@ -26,7 +26,7 @@ class StreamTest extends FunctionalTestCase
 
         $localPath = self::$sharePath . '/file.nfo';
         static::assertFileExists($localPath);
-        static::assertFileEquals('test', $localPath);
+        static::assertStringEqualsFile($localPath, 'test');
     }
 
     public function testGets()
@@ -72,11 +72,11 @@ class StreamTest extends FunctionalTestCase
         $fh = fopen(self::$shareUrl . '/write.txt', 'a+');
         fwrite($fh, "Footer\n");
 
-        static::assertFileEquals("Header\n", $localPath);
+        static::assertStringEqualsFile($localPath, "Header\n");
 
         unset($fh);
 
-        static::assertFileEquals("Header\nFooter\n", $localPath);
+        static::assertStringEqualsFile($localPath, "Header\nFooter\n");
     }
 
     /**

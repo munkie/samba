@@ -229,12 +229,11 @@ class SambaClient
     {
         $args = '';
         foreach ($options as $key => $value) {
-            $args.= ' ' . $key . ' ' . escapeshellarg($value);
+            $args .= ' ' . $key . ' ' . escapeshellarg($value);
         }
-        return popen(
-            self::CLIENT . " -N {$args} {$params} 2>/dev/null",
-            'r'
-        );
+        $command = sprintf("%s -N %s %s 2>/dev/null", self::CLIENT, $args, $params);
+
+        return popen($command, 'r');
     }
 
     /**

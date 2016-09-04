@@ -182,7 +182,7 @@ class SambaStreamWrapperTest extends TestCase
             ->method('execute')
             ->willReturn($this->getExpectedDirInfo());
 
-        $expectedStatInfoDir = $this->createStatInfo('/tmp', 0, 1380789766);
+        $expectedStatInfoDir = $this->createStatInfo('/tmp', 0, 1380804166);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoDir = $wrapper->url_stat($urlDir);
@@ -201,7 +201,7 @@ class SambaStreamWrapperTest extends TestCase
             ->method('execute')
             ->willReturn($this->getExpectedDirInfo());
 
-        $expectedStatInfoFile = $this->createStatInfo('/etc/passwd', 70, 1378998030);
+        $expectedStatInfoFile = $this->createStatInfo('/etc/passwd', 70, 1379012430);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoFile = $wrapper->url_stat($urlFile);
