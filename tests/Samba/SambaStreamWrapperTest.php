@@ -14,9 +14,9 @@ class SambaStreamWrapperTest extends TestCase
         $expectedExecuteCommand = 'del "to\dir\file.doc"';
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('execute')
-            ->with($this->equalTo($expectedExecuteCommand), $this->equalTo($parsedUrl));
+            ->with($expectedExecuteCommand, $parsedUrl);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->unlink($url);
@@ -48,9 +48,9 @@ class SambaStreamWrapperTest extends TestCase
         $expectedExecuteCommand = 'rename "to\dir\file.doc" "to\dir\file_new.doc"';
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('execute')
-            ->with($this->equalTo($expectedExecuteCommand), $this->equalTo($parsedUrlNew));
+            ->with($expectedExecuteCommand, $parsedUrlNew);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->rename($url, $urlNew);
@@ -94,9 +94,9 @@ class SambaStreamWrapperTest extends TestCase
         $expectedExecuteCommand = 'mkdir "to\dir"';
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('execute')
-            ->with($this->equalTo($expectedExecuteCommand), $this->equalTo($parsedUrl));
+            ->with($expectedExecuteCommand, $parsedUrl);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->mkdir($url, '', '');
@@ -125,9 +125,9 @@ class SambaStreamWrapperTest extends TestCase
         $expectedExecuteCommand = 'rmdir "to\dir"';
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('execute')
-            ->with($this->equalTo($expectedExecuteCommand), $this->equalTo($parsedUrl));
+            ->with($expectedExecuteCommand, $parsedUrl);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->rmdir($url);
@@ -159,16 +159,15 @@ class SambaStreamWrapperTest extends TestCase
         );
 
         $sambaMock
-            ->expects($this->any())
             ->method('look')
-            ->will($this->returnValue($lookInfo));
+            ->willReturn($lookInfo);
 
         $expectedStatInfoHost = $this->createStatInfo('/tmp', 0, 0);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoHost = $wrapper->url_stat($urlHost);
 
-        $this->assertEquals($expectedStatInfoHost, $actualStatInfoHost);
+        static::assertEquals($expectedStatInfoHost, $actualStatInfoHost);
     }
 
     public function testUrlStatDir()
@@ -178,16 +177,15 @@ class SambaStreamWrapperTest extends TestCase
         $sambaMock = $this->getSambaClientMock(array('execute'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('execute')
-            ->will($this->returnValue($this->getExpectedDirInfo()));
+            ->willReturn($this->getExpectedDirInfo());
 
-        $expectedStatInfoDir = $this->createStatInfo('/tmp', 0, 1380789766);
+        $expectedStatInfoDir = $this->createStatInfo('/tmp', 0, 1380804166);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoDir = $wrapper->url_stat($urlDir);
 
-        $this->assertEquals($expectedStatInfoDir, $actualStatInfoDir);
+        static::assertEquals($expectedStatInfoDir, $actualStatInfoDir);
     }
 
     public function testUrlStatFile()
@@ -197,16 +195,15 @@ class SambaStreamWrapperTest extends TestCase
         $sambaMock = $this->getSambaClientMock(array('execute'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('execute')
-            ->will($this->returnValue($this->getExpectedDirInfo()));
+            ->willReturn($this->getExpectedDirInfo());
 
-        $expectedStatInfoFile = $this->createStatInfo('/etc/passwd', 70, 1378998030);
+        $expectedStatInfoFile = $this->createStatInfo('/etc/passwd', 70, 1379012430);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoFile = $wrapper->url_stat($urlFile);
 
-        $this->assertEquals($expectedStatInfoFile, $actualStatInfoFile);
+        static::assertEquals($expectedStatInfoFile, $actualStatInfoFile);
     }
 
     public function testUrlStatShare()
@@ -222,16 +219,15 @@ class SambaStreamWrapperTest extends TestCase
         $sambaMock = $this->getSambaClientMock(array('look'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('look')
-            ->will($this->returnValue($shareLookInfo));
+            ->willReturn($shareLookInfo);
 
         $expectedStatInfoShare = $this->createStatInfo('/tmp', 0, 0);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $actualStatInfoShare = $wrapper->url_stat($urlShare);
 
-        $this->assertEquals($expectedStatInfoShare, $actualStatInfoShare);
+        static::assertEquals($expectedStatInfoShare, $actualStatInfoShare);
     }
 
     /**
@@ -261,9 +257,8 @@ class SambaStreamWrapperTest extends TestCase
         $sambaMock = $this->getSambaClientMock(array('look'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('look')
-            ->will($this->returnValue($shareLookInfo));
+            ->willReturn($shareLookInfo);
 
         $urlShare = "smb://user:password@host/base_path";
 
@@ -305,7 +300,7 @@ class SambaStreamWrapperTest extends TestCase
         $executeOutput =  <<<EOF
 Anonymous login successful
 Domain=[MYGROUP] OS=[Unix] Server=[Samba 3.0.33-3.39.el5_8]
-NT_STATUS_NO_SUCH_FILE listing \reports
+NT_STATUS_NO_SUCH_FILE listing reports
 EOF;
 
         $executeOutputStream = $this->convertStringToResource($executeOutput);
@@ -313,9 +308,8 @@ EOF;
         $sambaMock = $this->getSambaClientMock(array('getProcessResource'));
 
         $sambaMock
-            ->expects($this->any())
             ->method('getProcessResource')
-            ->will($this->returnValue($executeOutputStream));
+            ->willReturn($executeOutputStream);
 
         $urlDir = "smb://user:password@host/base_path/success";
 
@@ -336,15 +330,15 @@ EOF;
         );
 
         $sambaMock
-            ->expects($this->once())
+            ->expects(static::once())
             ->method('look')
-            ->will($this->returnValue($lookInfo));
+            ->willReturn($lookInfo);
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->dir_opendir($urlHost, 0);
 
-        $this->assertEquals('centrum', $wrapper->dir_readdir());
-        $this->assertFalse($wrapper->dir_readdir());
+        static::assertSame('centrum', $wrapper->dir_readdir());
+        static::assertFalse($wrapper->dir_readdir());
     }
 
     public function testDirOpenDir()
@@ -356,7 +350,7 @@ EOF;
         $sambaMock
             ->expects($this->any())
             ->method('execute')
-            ->will($this->returnValue($this->getExpectedDirInfo()));
+            ->willReturn($this->getExpectedDirInfo());
 
         $wrapper = new SambaStreamWrapper($sambaMock);
         $wrapper->dir_opendir($urlDir, 0);
@@ -377,7 +371,7 @@ EOF;
             $dir[] = $line;
         }
 
-        $this->assertSame($expectedDir, $dir);
+        static::assertSame($expectedDir, $dir);
     }
 
     /**
@@ -441,15 +435,15 @@ EOF;
      */
     public function testWrapperRegister()
     {
-        $this->assertFalse(SambaStreamWrapper::is_registered());
+        static::assertFalse(SambaStreamWrapper::is_registered());
 
         SambaStreamWrapper::register();
 
-        $this->assertTrue(SambaStreamWrapper::is_registered());
+        static::assertTrue(SambaStreamWrapper::is_registered());
 
         SambaStreamWrapper::unregister();
 
-        $this->assertFalse(SambaStreamWrapper::is_registered());
+        static::assertFalse(SambaStreamWrapper::is_registered());
     }
 
     /**

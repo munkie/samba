@@ -22,4 +22,8 @@
         </testsuite>
     </testsuites>
 
+    <php>
+        <ini name="date.timezone" value="UTC" />
+    </php>
+
 </phpunit>
